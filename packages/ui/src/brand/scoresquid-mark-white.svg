@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 6 120 194" role="img" aria-label="ScoreSquid">
+  <defs>
+    <mask id="eyes" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">
+      <rect width="200" height="200" fill="#fff"/>
+      <circle cx="88" cy="130" r="8" fill="#000"/>
+      <circle cx="112" cy="130" r="8" fill="#000"/>
+    </mask>
+  </defs>
+  <g fill="#FFFFFF">
+    <g mask="url(#eyes)">
+      <path d="M100 20 L146 82 L120 82 L120 114 L80 114 L80 82 L54 82 Z" stroke="#FFFFFF" stroke-width="14" stroke-linejoin="round"/>
+      <rect x="72" y="110" width="56" height="40" rx="20"/>
+    </g>
+    <circle cx="89" cy="131" r="3.5"/>
+    <circle cx="111" cy="131" r="3.5"/>
+    <g fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round">
+      <path d="M82 146 L82 166 Q82 184 66 188"/>
+      <path d="M95 148 L95 188"/>
+      <path d="M105 148 L105 188"/>
+      <path d="M118 146 L118 166 Q118 184 134 188"/>
+    </g>
+  </g>
+</svg>
