@@ -1,0 +1,28 @@
+{
+  "name": "@scoresquid/config",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared tooling config for ScoreSquid apps: TypeScript, ESLint, PostCSS, Tailwind preset, Vitest.",
+  "type": "module",
+  "exports": {
+    "./tsconfig/nextjs.json": "./tsconfig/nextjs.json",
+    "./eslint": "./eslint.mjs",
+    "./postcss": "./postcss.mjs",
+    "./tailwind": "./tailwind.mjs",
+    "./vitest": "./vitest.mjs"
+  },
+  "dependencies": {
+    "@tailwindcss/typography": "^0.5.19",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint-config-next": "^16.0.7",
+    "tailwindcss-animate": "^1.0.7"
+  },
+  "peerDependencies": {
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5",
+    "vitest": "^4.1.1"
+  }
+}
