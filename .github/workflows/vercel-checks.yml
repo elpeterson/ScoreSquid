@@ -4,6 +4,11 @@ on:
   repository_dispatch:
     types: [vercel.deployment.ready]
 
+# The repo's default token is read-only; the notify step posts a commit status.
+permissions:
+  contents: read
+  statuses: write
+
 jobs:
   test:
     name: Test
