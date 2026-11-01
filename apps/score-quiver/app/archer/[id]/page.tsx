@@ -12,7 +12,7 @@ import {
 import { computeEventStats, setupGroups, trendForSetup } from '@/lib/stats';
 import { parseDivision, bowStyleLabel } from '@/lib/division';
 import { formatDate, formatNumber } from '@/lib/format';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@scoresquid/ui/components/card';
 import { InsightsView } from '@/components/insights-view';
 import { ScorecardGrid } from '@/components/scorecard-grid';
 import { ArrowDistribution } from '@/components/arrow-distribution';

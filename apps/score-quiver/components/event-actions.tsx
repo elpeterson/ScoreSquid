@@ -3,9 +3,9 @@
 import { useState, useTransition } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button } from '@scoresquid/ui/components/button';
+import { Input } from '@scoresquid/ui/components/input';
+import { Label } from '@scoresquid/ui/components/label';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from '@scoresquid/ui/components/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,14 +25,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+} from '@scoresquid/ui/components/alert-dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@scoresquid/ui/components/select';
 import { BOW_STYLE_LABELS } from '@/lib/division';
 import { deleteEvent, updateEventSetup } from '@/app/(main)/events/[id]/actions';
 

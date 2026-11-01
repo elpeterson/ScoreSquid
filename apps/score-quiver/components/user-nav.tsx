@@ -13,9 +13,9 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
   DropdownMenuPortal,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+} from '@scoresquid/ui/components/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@scoresquid/ui/components/avatar';
+import { Button } from '@scoresquid/ui/components/button';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { User, LogOut, Moon, Sun, Laptop } from 'lucide-react';

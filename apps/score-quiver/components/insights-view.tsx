@@ -17,16 +17,16 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
-} from '@/components/ui/chart';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+} from '@scoresquid/ui/components/chart';
+import { Card, CardContent, CardHeader, CardTitle } from '@scoresquid/ui/components/card';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from '@scoresquid/ui/components/select';
+import { Tabs, TabsList, TabsTrigger } from '@scoresquid/ui/components/tabs';
 import { RINGS, type SetupGroup, type TrendPoint } from '@/lib/stats';
 import { formatDate, formatNumber, formatPercent } from '@/lib/format';
 

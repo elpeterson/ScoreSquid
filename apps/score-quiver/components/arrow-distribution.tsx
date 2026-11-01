@@ -1,6 +1,6 @@
 import { ARROW_ORDER } from '@/lib/stats';
 import { ARROW_CLASSES } from '@/components/arrow-chip';
-import { cn } from '@/lib/utils';
+import { cn } from '@scoresquid/ui/lib/utils';
 
 /** Horizontal bars, one per score value, colored by target ring. */
 export function ArrowDistribution({

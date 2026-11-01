@@ -14,7 +14,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
-} from '@/components/ui/chart';
+} from '@scoresquid/ui/components/chart';
 import type { ChartRow } from '@/lib/insights';
 
 // One distinct hue per apparatus, resolved from the CSS variables defined in

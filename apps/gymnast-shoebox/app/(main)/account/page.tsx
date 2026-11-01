@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { PasswordForm } from '@/components/password-form';
 import { GymnastList } from '@/components/gymnast-list';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@scoresquid/ui/components/tabs';
 
 export default async function AccountPage() {
   const supabase = await createClient();

@@ -2,8 +2,8 @@
 
 import * as React from 'react';
 import { Check, ChevronsUpDown, PlusCircle, User } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { cn } from '@scoresquid/ui/lib/utils';
+import { Button } from '@scoresquid/ui/components/button';
 import {
   Command,
   CommandEmpty,
@@ -12,12 +12,12 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from '@/components/ui/command';
+} from '@scoresquid/ui/components/command';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
+} from '@scoresquid/ui/components/popover';
 import {
   Dialog,
   DialogContent,
@@ -26,16 +26,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from '@scoresquid/ui/components/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from '@scoresquid/ui/components/select';
+import { Input } from '@scoresquid/ui/components/input';
+import { Label } from '@scoresquid/ui/components/label';
 import { setActiveGymnast, createGymnast } from '@/app/actions/gymnast';
 import { toast } from 'sonner';
 

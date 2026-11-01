@@ -13,8 +13,8 @@
   "iconLibrary": "lucide",
   "aliases": {
     "components": "@/components",
-    "utils": "@/lib/utils",
-    "ui": "@/components/ui",
+    "utils": "@scoresquid/ui/lib/utils",
+    "ui": "@scoresquid/ui/components",
     "lib": "@/lib",
     "hooks": "@/hooks"
   },

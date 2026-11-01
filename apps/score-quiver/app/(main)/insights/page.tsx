@@ -4,8 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 import { ensureActiveArcher } from '@/app/actions/archer';
 import { fetchArcherEvents } from '@/lib/events';
 import { setupGroups, trendForSetup } from '@/lib/stats';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@scoresquid/ui/components/button';
+import { Card, CardContent } from '@scoresquid/ui/components/card';
 import { InsightsView } from '@/components/insights-view';
 
 export default async function InsightsPage() {

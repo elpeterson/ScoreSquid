@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { Button } from '@scoresquid/ui/components/button';
 import { BetaBanner } from '@/components/beta-banner';
 import { ensureActiveGymnast } from '@/app/actions/gymnast';
 import { CloudDownload, LineChart } from 'lucide-react';

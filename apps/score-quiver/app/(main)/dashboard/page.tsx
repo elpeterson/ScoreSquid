@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@scoresquid/ui/components/button';
+import { Card, CardContent } from '@scoresquid/ui/components/card';
 import { ensureActiveArcher } from '@/app/actions/archer';
 import { FileUp, LineChart, Trophy } from 'lucide-react';
 import { fetchArcherEvents } from '@/lib/events';
