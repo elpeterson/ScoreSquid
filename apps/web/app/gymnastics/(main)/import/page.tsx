@@ -1,0 +1,24 @@
+import { createClient } from '@scoresquid/auth/server';
+import { redirect } from 'next/navigation';
+import { ensureActiveGymnast } from '@/app/gymnastics/actions/gymnast';
+import { ImportView } from '@/features/gymnastics/components/import-view';
+
+export default async function ImportPage() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const activeGymnastId = await ensureActiveGymnast();
+  if (!activeGymnastId) redirect('/dashboard');
+
+  const { data: gymnast } = await supabase
+    .from('gymnasts')
+    .select('mso_id')
+    .eq('id', activeGymnastId)
+    .single();
+
+  return <ImportView initialMsoId={gymnast?.mso_id} />;
+}
