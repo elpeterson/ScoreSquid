@@ -16,8 +16,8 @@ The same numeric id resolves to the same athlete on both paths:
 
 | Path | Call | Result |
 |---|---|---|
-| Scrape (current) | `GET Athlete.MyScores/539672` | page titled **"Elias Edwards Gymnast ZnZ Gym"**, 44 result links |
-| JSON API (new) | `lookup_gymnast(p_gymnastid=539672)` | **Elias Edwards**, 44 meets, usagnum 1192423 |
+| Scrape (current) | `GET Athlete.MyScores/<id>` | page titled with the **gymnast's name and gym**, 44 result links |
+| JSON API (new) | `lookup_gymnast(p_gymnastid=<id>)` | the **same gymnast**, 44 meets, with a USA Gymnastics number |
 
 So the value already stored in `gymnasts.mso_id` can be passed straight to the
 JSON API as `p_gymnastid`. **No identity-resolution step is needed** — this was
@@ -28,7 +28,7 @@ the main risk and it's retired.
 `lookup_scores2(p_meetid)` returns structured fields per gymnast per meet:
 
 ```
-scored gymnast: Asher Corbett | level: J6 | div: Junior 16 | EventType: ARTM
+scored gymnast: <name> | level: J6 | div: Junior 16 | EventType: ARTM
 slots FX/PH/SR/VT/PB/HB: 12.400 11.994 11.550 12.581 11.450 11.531
 AA: 71.506  place 8
 distinct (level,div) at this meet: (J6,Junior 16) (J7,Junior 17) (SR,Senior)
@@ -46,8 +46,8 @@ distinct (level,div) at this meet: (J6,Junior 16) (J7,Junior 17) (SR,Senior)
   did not narrow the 95-row meet result; filter to the athlete client-side on
   `gymnastid`. (Athlete history across meets comes from `lookup_gymnast`, which
   returns one row per meet — matches the earlier consistency findings.)
-- **Unscored meets return all-zero slots** (e.g. Edwards at meet 36935 before
-  his session ran). `0.000000` / empty = "not scored", map to null (same rule
+- **Unscored meets return all-zero slots** (e.g. a gymnast at a meet before
+  their session ran). `0.000000` / empty = "not scored", map to null (same rule
   the graph already uses).
 - **Olympic-order slots are men's (ARTM).** Women's (ARTW) uses a different slot
   layout; keep the WAG path free-text / discipline-aware, consistent with the
