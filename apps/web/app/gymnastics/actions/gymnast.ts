@@ -81,7 +81,7 @@ export async function createGymnast(formData: FormData) {
 
   await setActiveGymnast(data.id);
 
-  revalidatePath('/gymnastics/gymnastics');
+  revalidatePath('/gymnastics');
   return { success: true };
 }
 
@@ -112,7 +112,7 @@ export async function updateGymnast(id: string, formData: FormData) {
   if (error) return { error: error.message };
 
   revalidatePath('/gymnastics/account');
-  revalidatePath('/gymnastics/gymnastics');
+  revalidatePath('/gymnastics');
   return { success: true };
 }
 
@@ -141,6 +141,6 @@ export async function deleteGymnast(id: string) {
   if (error) return { error: error.message };
 
   revalidatePath('/gymnastics/account');
-  revalidatePath('/gymnastics/gymnastics');
+  revalidatePath('/gymnastics');
   return { success: true };
 }

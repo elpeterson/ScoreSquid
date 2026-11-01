@@ -12,6 +12,7 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata = {
   title: 'Gymnast Shoebox',
   description: 'Track your gymnastics scores',
+  icons: { icon: '/icon.svg' },
 };
 
 export default async function RootLayout({

@@ -40,6 +40,22 @@ describe('createAuthProxy', () => {
     expect(redirectOf(await visit('/'))).toBe('https://app.example/login');
   });
 
+  it('rewrites to the sport folder without changing the URL', async () => {
+    const sportProxy = createAuthProxy({ rewritePrefix: '/archery', publicPrefixes: ['/archer'] });
+    const go = (path: string) => sportProxy(new NextRequest(`https://app.example${path}`));
+    const rewriteOf = (r: Response) => r.headers.get('x-middleware-rewrite');
+
+    expect(rewriteOf(await go('/login'))).toBe('https://app.example/archery/login');
+    expect(rewriteOf(await go('/archer/123'))).toBe('https://app.example/archery/archer/123');
+    expect(redirectOf(await go('/dashboard'))).toBe('https://app.example/login');
+
+    user = { id: 'u1' };
+    refreshedCookie = 'rotated';
+    const home = await go('/');
+    expect(rewriteOf(home)).toBe('https://app.example/archery');
+    expect(home.cookies.get('sb-token')?.value).toBe('rotated');
+  });
+
   it('lets signed-out visitors reach the auth pages', async () => {
     expect(redirectOf(await visit('/login'))).toBeNull();
     expect(redirectOf(await visit('/login?error=link_failed'))).toBeNull();

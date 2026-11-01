@@ -1,6 +1,3 @@
-/** Every app stores a theme; apps add their own boolean toggles. */
-export type BaseSettings = { theme: string };
-
 const THEMES = ['light', 'dark', 'system'];
 
 /**
@@ -9,7 +6,7 @@ const THEMES = ['light', 'dark', 'system'];
  * must have that column's type. `defaults` is the whitelist: `theme`, plus any
  * key whose default is a boolean.
  */
-export function parseSettingUpdate<T extends BaseSettings>(
+export function parseSettingUpdate<T extends object>(
   key: unknown,
   value: unknown,
   defaults: T,
@@ -17,7 +14,7 @@ export function parseSettingUpdate<T extends BaseSettings>(
   if (typeof key !== 'string' || !Object.hasOwn(defaults, key)) return null;
   if (key === 'theme') {
     return typeof value === 'string' && THEMES.includes(value)
-      ? ({ theme: value } as Partial<T>)
+      ? ({ theme: value } as unknown as Partial<T>)
       : null;
   }
   const isToggle = typeof defaults[key as keyof T] === 'boolean';

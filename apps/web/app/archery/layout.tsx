@@ -12,6 +12,7 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata = {
   title: 'Score Quiver',
   description: 'Every scorecard, every end, every arrow.',
+  icons: { icon: '/icon.svg' },
 };
 
 export default async function RootLayout({

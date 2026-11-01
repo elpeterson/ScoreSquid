@@ -1,18 +1,16 @@
 'use server';
 
 import { requestPasswordReset, signIn, signUp } from '@scoresquid/auth/actions';
-
-// Used in email links when NEXT_PUBLIC_BASE_URL is not set.
-const FALLBACK_ORIGIN = 'https://scorequiver.elpeterson.com';
+import { emailOrigin } from '@/lib/sport';
 
 export async function login(formData: FormData) {
   return signIn(formData);
 }
 
 export async function signup(formData: FormData) {
-  return signUp(formData, FALLBACK_ORIGIN);
+  return signUp(formData, emailOrigin('archery'));
 }
 
 export async function resetPassword(formData: FormData) {
-  return requestPasswordReset(formData, FALLBACK_ORIGIN);
+  return requestPasswordReset(formData, emailOrigin('archery'));
 }

@@ -70,7 +70,7 @@ export async function createArcher(formData: FormData) {
 
   await setActiveArcher(data.id);
 
-  revalidatePath('/archery/archery');
+  revalidatePath('/archery');
   return { success: true };
 }
 
@@ -93,7 +93,7 @@ export async function updateArcher(id: string, formData: FormData) {
   if (error) return { error: error.message };
 
   revalidatePath('/archery/account');
-  revalidatePath('/archery/archery');
+  revalidatePath('/archery');
   return { success: true };
 }
 
@@ -142,6 +142,6 @@ export async function deleteArcher(id: string) {
   if (error) return { error };
 
   revalidatePath('/archery/account');
-  revalidatePath('/archery/archery');
+  revalidatePath('/archery');
   return { success: true };
 }
