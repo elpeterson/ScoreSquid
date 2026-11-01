@@ -21,7 +21,7 @@ export default async function MainLayout({
   }
 
   const { data: gymnasts } = await supabase
-    .from('gymnasts')
+    .from('gymnast_athletes')
     .select('id, name')
     .eq('user_id', user.id)
     .order('created_at', { ascending: true });

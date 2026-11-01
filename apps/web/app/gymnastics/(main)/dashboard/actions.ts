@@ -12,9 +12,9 @@ export async function loadMoreCompetitions(gymnastId: string, offset: number) {
   if (!user) return { error: 'Unauthorized' };
 
   const { data, error } = await supabase
-    .from('competitions_with_scores')
+    .from('gym_competitions_with_scores')
     .select('*')
-    .eq('gymnast_id', gymnastId)
+    .eq('athlete_id', gymnastId)
     .order('start_date', { ascending: false, nullsFirst: true })
     .order('created_at', { ascending: false })
     .range(offset, offset + COMPETITIONS_PAGE_SIZE - 1);

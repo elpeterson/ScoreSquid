@@ -99,9 +99,9 @@ async function fetchMsoMeetsScrape(msoId: string): Promise<FetchMeetsResult> {
     }
 
     const { data: existing } = await supabase
-      .from('competitions')
+      .from('gym_competitions')
       .select('name')
-      .eq('gymnast_id', activeGymnastId);
+      .eq('athlete_id', activeGymnastId);
 
     const existingNames = new Set(existing?.map((e) => e.name));
 
@@ -169,7 +169,7 @@ async function importMsoMeetScrape(meet: MsoMeetSummary): Promise<ImportResult> 
       supabase,
       {
         user_id: user.id,
-        gymnast_id: gymnastId,
+        athlete_id: gymnastId,
         name: realName,
         level: meet.level,
         start_date: startDate,
@@ -209,7 +209,7 @@ async function activeGymnastContext() {
   const gymnastId = await ensureActiveGymnast();
   if (!user || !gymnastId) return null;
   const { data: gymnast } = await supabase
-    .from('gymnasts')
+    .from('gymnast_athletes')
     .select('discipline, mso_id')
     .eq('id', gymnastId)
     .single();
@@ -239,9 +239,9 @@ async function fetchMsoMeetsApi(msoId: string): Promise<FetchMeetsResult> {
   }
 
   const { data: existing } = await ctx.supabase
-    .from('competitions')
+    .from('gym_competitions')
     .select('name')
-    .eq('gymnast_id', ctx.gymnastId);
+    .eq('athlete_id', ctx.gymnastId);
   const existingNames = new Set(existing?.map((e) => e.name));
 
   const meets: MsoMeetSummary[] = history.map((m) => ({
@@ -280,7 +280,7 @@ async function importMsoMeetApi(meet: MsoMeetSummary): Promise<ImportResult> {
     ctx.supabase,
     {
       user_id: ctx.user.id,
-      gymnast_id: ctx.gymnastId,
+      athlete_id: ctx.gymnastId,
       name: result.meetName || meet.name,
       level: result.level,
       division: result.division,

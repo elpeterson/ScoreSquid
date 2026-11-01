@@ -58,7 +58,7 @@ export async function createScore(formData: FormData) {
     supabase,
     {
       user_id: user.id,
-      gymnast_id: gymnastId,
+      athlete_id: gymnastId,
       name: name,
       start_date: startDate,
       end_date: endDate,
@@ -87,7 +87,7 @@ export async function deleteCompetition(id: string) {
   if (!user) redirect('/login');
 
   const { error } = await supabase
-    .from('competitions')
+    .from('gym_competitions')
     .delete()
     .eq('id', id)
     .eq('user_id', user.id);
@@ -125,7 +125,7 @@ export async function updateCompetition(id: string, formData: FormData) {
   const endDate = rawEndDate ? rawEndDate : null;
 
   const { error: compError } = await supabase
-    .from('competitions')
+    .from('gym_competitions')
     .update({
       name,
       start_date: startDate,
@@ -157,7 +157,7 @@ export async function updateCompetition(id: string, formData: FormData) {
   }));
 
   const { error: scoresError } = await supabase
-    .from('scores')
+    .from('gym_scores')
     .upsert(scoreUpserts, { onConflict: 'competition_id,apparatus' });
 
   if (scoresError) return { error: 'Failed to update scores.' };

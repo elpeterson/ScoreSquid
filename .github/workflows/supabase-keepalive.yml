@@ -21,4 +21,4 @@ jobs:
           curl --fail --silent --show-error --max-time 30 --retry 3 --retry-delay 10 \
             -o /dev/null -w 'HTTP %{http_code}\n' \
             -H "apikey: ${SUPABASE_PUBLISHABLE_KEY}" \
-            "${SUPABASE_URL}/rest/v1/gymnasts?select=id&limit=1"
+            "${SUPABASE_URL}/rest/v1/athletes?select=id&limit=1"

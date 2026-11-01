@@ -21,15 +21,15 @@ export default async function Dashboard() {
   const activeGymnastId = await ensureActiveGymnast();
 
   const { data: gymnast } = await supabase
-    .from('gymnasts')
+    .from('gymnast_athletes')
     .select('discipline')
     .eq('id', activeGymnastId)
     .single();
 
   const { data: competitions, error, count } = await supabase
-    .from('competitions_with_scores')
+    .from('gym_competitions_with_scores')
     .select('*', { count: 'exact' })
-    .eq('gymnast_id', activeGymnastId)
+    .eq('athlete_id', activeGymnastId)
     .order('start_date', { ascending: false, nullsFirst: true })
     .order('created_at', { ascending: false })
     .range(0, COMPETITIONS_PAGE_SIZE - 1);

@@ -14,11 +14,11 @@ export default async function ImportPage() {
   if (!activeArcherId) redirect('/dashboard');
 
   const [{ data: archer }, { data: events }] = await Promise.all([
-    supabase.from('archers').select('id, name').eq('id', activeArcherId).single(),
+    supabase.from('archer_athletes').select('id, name').eq('id', activeArcherId).single(),
     supabase
-      .from('events')
+      .from('arch_events')
       .select('environment, bow_style, distance_m, face_cm, source_hash, shot_on')
-      .eq('archer_id', activeArcherId)
+      .eq('athlete_id', activeArcherId)
       .order('shot_on', { ascending: false, nullsFirst: false }),
   ]);
 

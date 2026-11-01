@@ -11,7 +11,7 @@ export default async function EditCompetitionPage({
   const supabase = await createClient();
 
   const { data: competition, error } = await supabase
-    .from('competitions_with_scores')
+    .from('gym_competitions_with_scores')
     .select('*')
     .eq('id', id)
     .single();
@@ -21,9 +21,9 @@ export default async function EditCompetitionPage({
   }
 
   const { data: gymnast } = await supabase
-    .from('gymnasts')
+    .from('gymnast_athletes')
     .select('discipline')
-    .eq('id', competition.gymnast_id)
+    .eq('id', competition.athlete_id)
     .single();
 
   return (

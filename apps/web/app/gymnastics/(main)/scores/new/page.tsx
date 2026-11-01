@@ -10,7 +10,7 @@ export default async function AddScorePage() {
   if (!gymnastId) redirect('/dashboard');
 
   const { data: gymnast } = await supabase
-    .from('gymnasts')
+    .from('gymnast_athletes')
     .select('discipline')
     .eq('id', gymnastId)
     .single();

@@ -22,7 +22,7 @@ export async function insertCompetitionWithScores(
   scores: ScoreInsert[],
 ): Promise<InsertResult> {
   const { data: comp, error: compError } = await supabase
-    .from('competitions')
+    .from('gym_competitions')
     .insert(competition)
     .select('id')
     .single();
@@ -31,11 +31,11 @@ export async function insertCompetitionWithScores(
 
   if (scores.length > 0) {
     const { error: scoresError } = await supabase
-      .from('scores')
+      .from('gym_scores')
       .insert(scores.map((s) => ({ ...s, competition_id: comp.id })));
 
     if (scoresError) {
-      await supabase.from('competitions').delete().eq('id', comp.id);
+      await supabase.from('gym_competitions').delete().eq('id', comp.id);
       return { error: 'scores' };
     }
   }

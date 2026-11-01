@@ -12,7 +12,7 @@ function fakeSupabase(opts: { compError?: boolean; scoresError?: boolean }) {
       return {
         insert(payload: unknown) {
           calls.push({ table, op: 'insert', payload });
-          if (table === 'competitions') {
+          if (table === 'gym_competitions') {
             return {
               select: () => ({
                 single: async () =>
@@ -38,7 +38,7 @@ function fakeSupabase(opts: { compError?: boolean; scoresError?: boolean }) {
   return { client: client as unknown as SupabaseClient, calls };
 }
 
-const comp = { name: 'Meet', gymnast_id: 'g1', user_id: 'u1' };
+const comp = { name: 'Meet', athlete_id: 'g1', user_id: 'u1' };
 const scores = [{ apparatus: 'vault', value: 13.5, place: 2 }];
 
 describe('insertCompetitionWithScores', () => {
@@ -48,8 +48,8 @@ describe('insertCompetitionWithScores', () => {
 
     expect(result).toEqual({ competitionId: 'comp-1' });
     expect(calls.map((c) => `${c.op}:${c.table}`)).toEqual([
-      'insert:competitions',
-      'insert:scores',
+      'insert:gym_competitions',
+      'insert:gym_scores',
     ]);
     expect(calls[1].payload).toEqual([{ ...scores[0], competition_id: 'comp-1' }]);
   });
@@ -59,7 +59,7 @@ describe('insertCompetitionWithScores', () => {
     const result = await insertCompetitionWithScores(client, comp, scores);
 
     expect(result).toEqual({ error: 'scores' });
-    expect(calls.at(-1)).toEqual({ table: 'competitions', op: 'delete', id: 'comp-1' });
+    expect(calls.at(-1)).toEqual({ table: 'gym_competitions', op: 'delete', id: 'comp-1' });
   });
 
   it('stops without touching scores when the competition insert fails', async () => {

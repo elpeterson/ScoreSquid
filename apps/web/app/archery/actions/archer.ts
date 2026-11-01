@@ -30,7 +30,7 @@ export async function ensureActiveArcher() {
 
   if (currentId) {
     const { data: valid } = await supabase
-      .from('archers')
+      .from('archer_athletes')
       .select('id')
       .eq('id', currentId)
       .eq('user_id', user.id)
@@ -40,7 +40,7 @@ export async function ensureActiveArcher() {
   }
 
   const { data: firstArcher } = await supabase
-    .from('archers')
+    .from('archer_athletes')
     .select('id')
     .eq('user_id', user.id)
     .order('created_at', { ascending: true })
@@ -60,15 +60,11 @@ export async function createArcher(formData: FormData) {
   const name = (formData.get('name') as string)?.trim();
   if (!name) return { error: 'Name is required' };
 
-  const { data, error } = await supabase
-    .from('archers')
-    .insert({ user_id: user.id, name })
-    .select()
-    .single();
+  const { data: newId, error } = await supabase.rpc('create_archer', { p_name: name });
 
   if (error) return { error: error.message };
 
-  await setActiveArcher(data.id);
+  await setActiveArcher(newId as string);
 
   revalidatePath('/archery');
   return { success: true };
@@ -85,10 +81,11 @@ export async function updateArcher(id: string, formData: FormData) {
   if (!name) return { error: 'Name is required' };
 
   const { error } = await supabase
-    .from('archers')
+    .from('athletes')
     .update({ name, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .eq('user_id', user.id);
+    .eq('user_id', user.id)
+    .eq('sport', 'archery');
 
   if (error) return { error: error.message };
 
@@ -105,7 +102,7 @@ export async function deleteArcher(id: string) {
   if (!user) return { error: 'Not authenticated' };
 
   const { count } = await supabase
-    .from('archers')
+    .from('archer_athletes')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', user.id);
 
@@ -117,9 +114,9 @@ export async function deleteArcher(id: string) {
     // The archer's scorecard PDFs: their rows cascade away with the archer.
     listFiles: async () => {
       const { data, error } = await supabase
-        .from('events')
+        .from('arch_events')
         .select('source_path')
-        .eq('archer_id', id)
+        .eq('athlete_id', id)
         .eq('user_id', user.id)
         .not('source_path', 'is', null);
       if (error) throw new Error(error.message);
@@ -127,10 +124,11 @@ export async function deleteArcher(id: string) {
     },
     deleteRow: async () => {
       const { error } = await supabase
-        .from('archers')
+        .from('athletes')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .eq('sport', 'archery');
       if (error) throw new Error(error.message);
     },
     removeFiles: async (paths) => {

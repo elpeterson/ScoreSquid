@@ -175,7 +175,7 @@ export function ScorecardImport({
 
     const payload: ImportPayload = {
       event: {
-        archer_id: archer.id,
+        athlete_id: archer.id,
         name: card.eventName,
         venue: card.venue,
         start_date: card.startDate,

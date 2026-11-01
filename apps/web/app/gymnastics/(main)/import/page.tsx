@@ -15,7 +15,7 @@ export default async function ImportPage() {
   if (!activeGymnastId) redirect('/dashboard');
 
   const { data: gymnast } = await supabase
-    .from('gymnasts')
+    .from('gymnast_athletes')
     .select('mso_id')
     .eq('id', activeGymnastId)
     .single();

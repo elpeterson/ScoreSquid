@@ -30,7 +30,7 @@ export async function ensureActiveGymnast() {
 
   if (currentId) {
     const { data: valid } = await supabase
-      .from('gymnasts')
+      .from('gymnast_athletes')
       .select('id')
       .eq('id', currentId)
       .eq('user_id', user.id)
@@ -40,9 +40,10 @@ export async function ensureActiveGymnast() {
   }
 
   const { data: firstGymnast } = await supabase
-    .from('gymnasts')
+    .from('gymnast_athletes')
     .select('id')
     .eq('user_id', user.id)
+    .order('created_at', { ascending: true })
     .limit(1)
     .single();
 
@@ -65,21 +66,16 @@ export async function createGymnast(formData: FormData) {
 
   if (!name) return { error: 'Name is required' };
 
-  const { data, error } = await supabase
-    .from('gymnasts')
-    .insert({
-      user_id: user.id,
-      name: name,
-      discipline: discipline || 'MAG',
-    })
-    .select()
-    .single();
+  const { data: newId, error } = await supabase.rpc('create_gymnast', {
+    p_name: name,
+    p_discipline: discipline || 'MAG',
+  });
 
   if (error) {
     return { error: error.message };
   }
 
-  await setActiveGymnast(data.id);
+  await setActiveGymnast(newId as string);
 
   revalidatePath('/gymnastics');
   return { success: true };
@@ -98,16 +94,12 @@ export async function updateGymnast(id: string, formData: FormData) {
 
   if (!name) return { error: 'Name is required' };
 
-  const { error } = await supabase
-    .from('gymnasts')
-    .update({
-      name,
-      mso_id: mso_id || null,
-      discipline: discipline,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-    .eq('user_id', user.id);
+  const { error } = await supabase.rpc('update_gymnast', {
+    p_id: id,
+    p_name: name,
+    p_mso_id: mso_id || null,
+    p_discipline: discipline || null,
+  });
 
   if (error) return { error: error.message };
 
@@ -124,7 +116,7 @@ export async function deleteGymnast(id: string) {
   if (!user) return { error: 'Not authenticated' };
 
   const { count } = await supabase
-    .from('gymnasts')
+    .from('gymnast_athletes')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', user.id);
 
@@ -133,10 +125,11 @@ export async function deleteGymnast(id: string) {
   }
 
   const { error } = await supabase
-    .from('gymnasts')
+    .from('athletes')
     .delete()
     .eq('id', id)
-    .eq('user_id', user.id);
+    .eq('user_id', user.id)
+    .eq('sport', 'gymnastics');
 
   if (error) return { error: error.message };
 

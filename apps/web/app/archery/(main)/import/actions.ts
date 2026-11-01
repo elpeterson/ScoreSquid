@@ -9,7 +9,7 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable();
 
 const ImportSchema = z.object({
   event: z.object({
-    archer_id: z.string().uuid(),
+    athlete_id: z.string().uuid(),
     name: z.string().min(1),
     venue: z.string().nullable(),
     start_date: isoDate,

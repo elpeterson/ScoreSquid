@@ -21,7 +21,7 @@ export async function updateEventSetup(
 
   const supabase = await createClient();
   const { error } = await supabase
-    .from('events')
+    .from('arch_events')
     .update({ ...parsed.data, updated_at: new Date().toISOString() })
     .eq('id', id);
 
@@ -37,12 +37,12 @@ export async function deleteEvent(id: string) {
   const supabase = await createClient();
 
   const { data: event } = await supabase
-    .from('events')
+    .from('arch_events')
     .select('source_path')
     .eq('id', id)
     .single();
 
-  const { error } = await supabase.from('events').delete().eq('id', id);
+  const { error } = await supabase.from('arch_events').delete().eq('id', id);
   if (error) return { error: error.message };
 
   if (event?.source_path) {

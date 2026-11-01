@@ -17,7 +17,7 @@ type ScoreItem = {
 
 type Competition = {
   id: string;
-  gymnast_id: string;
+  athlete_id: string;
   name: string;
   start_date: string | null;
   end_date: string | null;

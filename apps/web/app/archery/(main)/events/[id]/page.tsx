@@ -20,7 +20,7 @@ export default async function EventPage({
   const supabase = await createClient();
 
   const { data } = await supabase
-    .from('events')
+    .from('arch_events')
     .select(EVENT_SELECT)
     .eq('id', id)
     .single();

@@ -24,17 +24,17 @@ export default async function InsightsPage() {
   const activeGymnastId = await ensureActiveGymnast();
 
   const { data: gymnast } = await supabase
-    .from('gymnasts')
+    .from('gymnast_athletes')
     .select('name, discipline')
     .eq('id', activeGymnastId)
     .single();
 
   // Read division from the base table + embedded scores, so the feature does
-  // not depend on the `competitions_with_scores` view exposing `division`.
+  // not depend on the `gym_competitions_with_scores` view exposing `division`.
   const { data: competitions, error } = await supabase
-    .from('competitions')
-    .select('id, name, start_date, level, division, scores(apparatus, value)')
-    .eq('gymnast_id', activeGymnastId)
+    .from('gym_competitions')
+    .select('id, name, start_date, level, division, scores:gym_scores(apparatus, value)')
+    .eq('athlete_id', activeGymnastId)
     .order('start_date', { ascending: true, nullsFirst: false })
     .limit(MAX_COMPETITIONS);
 
