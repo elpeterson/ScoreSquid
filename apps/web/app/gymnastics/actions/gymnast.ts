@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@scoresquid/auth/server';
 import { revalidatePath } from 'next/cache';
 
-const COOKIE_NAME = 'gymnast_shoebox_active_gymnast';
+const COOKIE_NAME = 'scoresquid_active_gymnast';
 
 export async function setActiveGymnast(gymnastId: string) {
   const cookieStore = await cookies();

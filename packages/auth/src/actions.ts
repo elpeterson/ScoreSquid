@@ -77,7 +77,7 @@ export async function readUserSettings<T extends object>(
   defaults: T,
   table = 'user_settings',
 ): Promise<T> {
-  // Public pages render without Supabase configured (Score Quiver's local POC).
+  // Public pages render without Supabase configured (ScoreSquid Archery's local POC).
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return defaults;
 
   const supabase = await createClient();

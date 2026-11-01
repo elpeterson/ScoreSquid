@@ -1,7 +1,7 @@
 // Scoring analytics.
 //
 // Pure transforms over an event's arrows. The load-bearing rule (the archery
-// twin of Gymnast Shoebox's Level/Division rule): raw scores are only
+// twin of ScoreSquid Gymnastics's Level/Division rule): raw scores are only
 // comparable within one *setup* -- the same bow style, indoor/outdoor, distance
 // and face. Everything that trends over time groups by `setupKey` first.
 //

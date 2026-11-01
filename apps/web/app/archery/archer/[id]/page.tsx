@@ -197,7 +197,7 @@ function DataPanel({ store, results }: { store: ArcherStore; results: ArcherResu
       </CardHeader>
       <CardContent className="text-sm text-muted-foreground space-y-1">
         <p>
-          Read from Score Quiver&apos;s own store (built {formatDate(store.built_at.slice(0, 10))}), not live from
+          Read from ScoreSquid Archery&apos;s own store (built {formatDate(store.built_at.slice(0, 10))}), not live from
           Between Ends.
         </p>
         <p>

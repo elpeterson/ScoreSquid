@@ -26,7 +26,7 @@ describe('arrow characters', () => {
     expect(arrowPoints('?')).toBeNull();
   });
 
-  it('converts to Score Quiver arrows', () => {
+  it('converts to ScoreSquid Archery arrows', () => {
     expect(['T', 'X', 'M', '0', '9', 'a'].map(toArrow)).toEqual(['10', 'X', 'M', 'M', '9', '11']);
   });
 });

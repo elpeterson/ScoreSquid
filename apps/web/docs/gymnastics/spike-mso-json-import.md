@@ -4,7 +4,7 @@
 **Date:** 2026-08-18
 **Question:** Can we upgrade the MSO import from HTML scraping to the documented
 JSON API, and does the JSON API give us the `level` / `division` the scraper
-drops? Gating unknown: does Shoebox's stored `mso_id` (the "Athlete ID" the
+drops? Gating unknown: does ScoreSquid's stored `mso_id` (the "Athlete ID" the
 scraper uses) equal the JSON API's `gymnastid`?
 
 All checks below were run live against meetscoresonline.com on 2026-08-18,

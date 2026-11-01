@@ -6,7 +6,7 @@
 // Characters past rounds x ends x arrows are shoot-off arrows.
 //
 // The character table mirrors `arrow_value_list` in betweenends.com's
-// scoring.js. Score Quiver's own arrows are 'X' | '10'..'1' | 'M'; anything
+// scoring.js. ScoreSquid Archery's own arrows are 'X' | '10'..'1' | 'M'; anything
 // else (3-D 11/12/14, NFAA-style Xs worth 5 or 6) marks the entry non-standard
 // so callers can keep it out of like-for-like stats.
 
@@ -46,7 +46,7 @@ export function arrowPoints(c: string): number | null {
   return c in POINTS ? POINTS[c] : null;
 }
 
-/** One arrow character as a Score Quiver arrow ('X', '10'..'1', 'M'). */
+/** One arrow character as a ScoreSquid Archery arrow ('X', '10'..'1', 'M'). */
 export function toArrow(c: string): Arrow {
   if (c === 'T') return '10';
   if (c === 'M' || c === '0' || c === '!') return 'M';
@@ -78,7 +78,7 @@ export type DecodedArrows = {
   arrowsShot: number;
   scheduledArrows: number;
   complete: boolean;
-  /** Every arrow fits Score Quiver's X/10..1/M scale. */
+  /** Every arrow fits ScoreSquid Archery's X/10..1/M scale. */
   standard: boolean;
   /** Characters outside the site's table (should never happen; worth logging). */
   unknown: string[];

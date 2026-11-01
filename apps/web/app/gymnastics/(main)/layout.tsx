@@ -38,7 +38,7 @@ export default async function MainLayout({
               className="hover:opacity-80 transition-opacity"
             >
               <h1 className="text-xl font-bold text-white tracking-wide cursor-pointer hidden md:block">
-                Gymnast Shoebox
+                ScoreSquid Gymnastics
               </h1>
               <h1 className="text-xl font-bold text-white tracking-wide cursor-pointer md:hidden">
                 GS

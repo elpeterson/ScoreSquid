@@ -1,6 +1,6 @@
 // Tailwind preset shared by ScoreSquid apps: the shadcn/ui theme tokens, radius
 // and plugins. Each app adds its own `content` globs and app-only colours
-// (e.g. Score Quiver's target-face colours) on top; Tailwind deep-merges
+// (e.g. ScoreSquid Archery's target-face colours) on top; Tailwind deep-merges
 // `theme.extend` across presets.
 import animate from 'tailwindcss-animate';
 import typography from '@tailwindcss/typography';

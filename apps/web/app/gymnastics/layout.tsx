@@ -10,7 +10,7 @@ import { ThemeSync } from '@/features/gymnastics/components/theme-sync';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'Gymnast Shoebox',
+  title: 'ScoreSquid Gymnastics',
   description: 'Track your gymnastics scores',
   icons: { icon: '/icon.svg' },
 };

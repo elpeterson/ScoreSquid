@@ -28,7 +28,7 @@ export default async function Dashboard() {
   if (!activeArcherId) {
     return (
       <div className="max-w-xl mx-auto text-center py-16 space-y-3">
-        <h2 className="text-2xl font-bold">Welcome to Score Quiver</h2>
+        <h2 className="text-2xl font-bold">Welcome to ScoreSquid Archery</h2>
         <p className="text-muted-foreground">
           Start by adding an archer with the switcher in the header, then
           import their Between Ends scorecards.

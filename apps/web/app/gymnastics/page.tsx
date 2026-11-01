@@ -7,7 +7,7 @@ export default function Home() {
       <header className="flex items-center justify-between p-6 lg:px-8 bg-white border-b border-gray-100">
         <div className="flex lg:flex-1">
           <span className="text-xl font-bold text-indigo-600">
-            Gymnast Shoebox
+            ScoreSquid Gymnastics
           </span>
         </div>
         <div className="flex flex-1 justify-end">
@@ -20,7 +20,7 @@ export default function Home() {
           Never lose a score again.
         </h1>
         <p className="mt-6 text-lg leading-8 text-gray-600 max-w-2xl">
-          The simple, digital shoebox for your gymnast&apos;s competition
+          The simple, digital home for your gymnast&apos;s competition
           history. Secure, private, and always accessible.
         </p>
         <div className="mt-10 flex items-center justify-center gap-x-6">

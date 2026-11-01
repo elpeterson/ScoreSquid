@@ -12,7 +12,7 @@ import type { BeRankingEvent, BeRankingScores } from './types';
 /**
  * Scoring rules (`srl`) shot on a 10-ring target face: WA indoor/outdoor, OAS,
  * Easton. Field, 3-D and NFAA rules score on other scales, so their totals
- * don't compare with Score Quiver's other events even when the arrow
+ * don't compare with ScoreSquid Archery's other events even when the arrow
  * characters look ordinary (a field round is all 1-6).
  */
 export const TEN_RING_RULES: ReadonlySet<number> = new Set([0, 1, 2, 8, 10, 13, 17]);

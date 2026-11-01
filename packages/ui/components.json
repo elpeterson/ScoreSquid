@@ -5,7 +5,7 @@
   "tsx": true,
   "tailwind": {
     "config": "",
-    "css": "../../apps/gymnast-shoebox/app/globals.css",
+    "css": "../../apps/web/app/gymnastics/globals.css",
     "baseColor": "slate",
     "cssVariables": true,
     "prefix": ""

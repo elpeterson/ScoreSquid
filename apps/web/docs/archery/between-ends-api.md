@@ -1,12 +1,12 @@
 # Between Ends results API: discovery
 
-Findings from probing `resultsapi.herokuapp.com` (the JSON backend behind betweenends.com) on 2026-10-29, and what they mean for Score Quiver's archer view. The API is undocumented, so everything here comes from the live responses and the site's own front-end code (`index.html`, `tournament/:id`, `tournament/:id/event/:id`, `scoring/1.0.7/scoring.js`).
+Findings from probing `resultsapi.herokuapp.com` (the JSON backend behind betweenends.com) on 2026-10-29, and what they mean for ScoreSquid Archery's archer view. The API is undocumented, so everything here comes from the live responses and the site's own front-end code (`index.html`, `tournament/:id`, `tournament/:id/event/:id`, `scoring/1.0.7/scoring.js`).
 
 ## TL;DR
 - **Five read endpoints, no auth, open CORS** (`Access-Control-Allow-Origin: *`), weak ETags that return `304` on `If-None-Match`.
 - **There is no archer endpoint and no search.** Query strings are ignored. The only way to find "every result for one archer" is to crawl tournaments → events → entries and build our own index.
-- **`aid` is a per-event entry ID, not a person.** The cross-tournament key is `alt`, the archer's membership number (USA Archery style, usually 6 digits). It was filled on 95% of 1,100 sampled entries. Name + team + division is the fallback.
-- **Arrows come as one string per entry** (`"T98M7…"`), one character per arrow, decoded by a fixed table. Every arrow is available, so all of Score Quiver's insights work from the API alone.
+- **`aid` is a per-event entry ID, not a person.** The cross-tournament key is `alt`, the archer's membership number (USA Archery style, usually 6 digits). It was filled on 86% of a larger sample of entries. Name + team + division is the fallback.
+- **Arrows come as one string per entry** (`"T98M7…"`), one character per arrow, decoded by a fixed table. Every arrow is available, so all of ScoreSquid Archery's insights work from the API alone.
 - **The membership number is the way in.** Every archer knows it, and it's what `alt` holds. PDF upload is a secondary path, for confirming a match or recovering results where `alt` was left blank.
 
 ## Endpoints
@@ -49,7 +49,7 @@ Quirk: the `id` field *inside* `/events/:id` is a different number from the URL 
 | `tnm` / `tdt` / `tlc` | tournament name / date range (display string) / location | |
 | `rds` / `epr` / `ape` | rounds / ends per round / arrows per end | `2`, `10`, `3` → 60 arrows |
 | `srl` | scoring rule index (tie-breakers + valid arrows; table below) | `0` = WA indoor |
-| `tnl` | sessions: `{ id: { id, nm } }`, where `nm` is the label Score Quiver already parses for the day shot | `"…, Saturday 9am"` |
+| `tnl` | sessions: `{ id: { id, nm } }`, where `nm` is the label ScoreSquid Archery already parses for the day shot | `"…, Saturday 9am"` |
 | `nos` | number of sessions | |
 | `rps` | **entries**, keyed by `aid` (below) | |
 | `cgs` | **divisions**: `[{ nm, dor, cut, ars: [{aid}] }]` (an entry's division name comes from whichever group lists its `aid`) | `"Recurve Senior Men"` |
@@ -97,7 +97,7 @@ A different shape: `{ data: [[{ cnd_name, column_label, scores: { aid: { points,
 
 Not yet sampled: `CombinedRankingEvent`, `SpecialEvent`, outdoor ranking rounds with `X`, and a 3-D event.
 
-## What this means for Score Quiver
+## What this means for ScoreSquid Archery
 
 ### 1. We need our own index (a crawler)
 There's no "archer → results" lookup, so the archer view reads from tables we fill:

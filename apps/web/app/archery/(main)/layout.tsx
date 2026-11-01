@@ -38,7 +38,7 @@ export default async function MainLayout({
               className="hover:opacity-80 transition-opacity shrink-0"
             >
               <h1 className="text-xl font-bold text-white tracking-wide cursor-pointer hidden md:block">
-                Score Quiver
+                ScoreSquid Archery
               </h1>
               <h1 className="text-xl font-bold text-white tracking-wide cursor-pointer md:hidden">
                 SQ

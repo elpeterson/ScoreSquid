@@ -11,7 +11,7 @@ export default async function LoginPage({
 
   return (
     <LoginScreen
-      appName="Gymnast Shoebox"
+      appName="ScoreSquid Gymnastics"
       tagline="Sign in to track your scores"
       actions={{ login, signup, resetPassword }}
       initialError={loginErrorMessage(error)}

@@ -10,7 +10,7 @@ import { ThemeSync } from '@/features/archery/components/theme-sync';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'Score Quiver',
+  title: 'ScoreSquid Archery',
   description: 'Every scorecard, every end, every arrow.',
   icons: { icon: '/icon.svg' },
 };

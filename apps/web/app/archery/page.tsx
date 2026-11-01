@@ -6,7 +6,7 @@ export default function Home() {
     <div className="flex min-h-screen flex-col">
       <header className="flex items-center justify-between p-6 lg:px-8 border-b">
         <div className="flex lg:flex-1">
-          <span className="text-xl font-bold text-primary">Score Quiver</span>
+          <span className="text-xl font-bold text-primary">ScoreSquid Archery</span>
         </div>
         <div className="flex flex-1 justify-end">
           <AuthButton />

@@ -12,7 +12,7 @@ import { Coffee } from 'lucide-react';
 import Link from 'next/link';
 
 export default async function AboutPage() {
-  const filePath = path.join(process.cwd(), 'README.md');
+  const filePath = path.join(process.cwd(), 'docs/gymnastics/README.md');
   let content = '';
 
   try {
@@ -46,12 +46,12 @@ export default async function AboutPage() {
               At the end of the day all of this here is <strong>your</strong>{' '}
               data and it belongs to you. The README (below) has all the
               instructions you need to host your own database, and version of
-              Gymnast Shoebox, by yourself so you never have to worry about{' '}
+              ScoreSquid Gymnastics, by yourself so you never have to worry about{' '}
               <em>my</em> app going the way of MyUSAGym. All the code is free
               and available for you to use however you please.
             </p>
             <p>
-              <strong>Gymnast Shoebox</strong> is designed to be the digital
+              <strong>ScoreSquid Gymnastics</strong> is designed to be the digital
               home for your gymnast&apos;s scores. I hope it helps you enjoy the
               meets a little more without worrying about losing the data.
             </p>

@@ -23,7 +23,7 @@ import type {
 
 export const BE_API_BASE = 'https://resultsapi.herokuapp.com';
 
-const USER_AGENT = 'ScoreQuiver/0.1 (+https://github.com/elpeterson/archers-shoebox)';
+const USER_AGENT = 'ScoreSquid/0.1 (+https://github.com/elpeterson/ScoreSquid)';
 
 /** The only paths this client will request. */
 const ALLOWED_PATHS = [

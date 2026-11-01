@@ -6,7 +6,7 @@ import { deleteProfileWithFiles } from '@scoresquid/auth/profile';
 import { createClient } from '@scoresquid/auth/server';
 import { revalidatePath } from 'next/cache';
 
-const COOKIE_NAME = 'score_quiver_active_archer';
+const COOKIE_NAME = 'scoresquid_active_archer';
 
 export async function setActiveArcher(archerId: string) {
   const cookieStore = await cookies();

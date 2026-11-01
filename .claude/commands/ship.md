@@ -30,7 +30,7 @@ Stage only files that belong to this change (never `.env*` other than `.env.exam
 Do not push. Print the exact command for the user:
 
 ```
-! git push -u gymnast-shoebox <branch> && gh pr create --fill
+! git push -u origin <branch> && gh pr create --fill
 ```
 
 and a two-line summary: what changed, and which checks passed.

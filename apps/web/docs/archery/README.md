@@ -1,11 +1,11 @@
-# Score Quiver
+# ScoreSquid Archery
 
-[![License](https://img.shields.io/badge/license-GPL--3.0-blueviolet?style=flat-square)](LICENSE)
-[![CI](https://img.shields.io/github/actions/workflow/status/elpeterson/archers-shoebox/ci.yml?style=flat-square&label=tests)](https://github.com/elpeterson/archers-shoebox/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-GPL--3.0-blueviolet?style=flat-square)](../../../../LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/elpeterson/ScoreSquid/ci.yml?style=flat-square&label=tests)](https://github.com/elpeterson/ScoreSquid/actions/workflows/ci.yml)
 
 > **"Every arrow, remembered."**
 
-Score Quiver is the archery sibling of [Gymnast Shoebox](https://github.com/elpeterson/gymnast-shoebox): a private, permanent home for an archer's tournament scorecards, built for looking back and seeing improvement, not live scoring.
+ScoreSquid Archery is the archery side of [ScoreSquid](https://github.com/elpeterson/ScoreSquid): a private, permanent home for an archer's tournament scorecards, built for looking back and seeing improvement, not live scoring.
 
 ## 🚀 Features
 *   **Between Ends import:** Drop in the scorecard PDFs Between Ends lets archers download. They're parsed in the browser down to every arrow, and the original PDF is kept alongside the score.
@@ -22,7 +22,7 @@ Score Quiver is the archery sibling of [Gymnast Shoebox](https://github.com/elpe
 
 ## 🏹 How import works
 
-Between Ends exports scorecards with jsPDF, so every cell is real, positioned text. `lib/scorecard/parse.ts` finds each round's grid by its header row (`Rnd N … Sum Total <bonus> <bonus>`) and reads cells by column position. That one rule handles both layouts seen so far:
+Between Ends exports scorecards with jsPDF, so every cell is real, positioned text. `features/archery/lib/scorecard/parse.ts` finds each round's grid by its header row (`Rnd N … Sum Total <bonus> <bonus>`) and reads cells by column position. That one rule handles both layouts seen so far:
 
 | | Indoor | Outdoor |
 |---|---|---|
@@ -35,7 +35,7 @@ Details worth knowing:
 - **The day shot comes from the session label.** Postal events (e.g. JOAD Indoor Nationals) span months; "Massachusetts, Feb 20, 12:30pm" or "Saturday 9am" resolves the actual day.
 - **Duplicates are detected** by the PDF's SHA-256, per archer.
 
-Test fixtures in `lib/__tests__/fixtures/` are real exports converted with `scripts/make-fixture.mjs`, which replaces the archer's name. Never commit raw scorecard PDFs.
+Test fixtures in `features/archery/lib/__tests__/fixtures/` are real exports converted with `scripts/archery/make-fixture.mjs`, which replaces the archer's name. Never commit raw scorecard PDFs.
 
 ## 🛠 Tech Stack
 - **Framework:** [Next.js 16](https://nextjs.org/) (App Router)
@@ -47,29 +47,7 @@ Test fixtures in `lib/__tests__/fixtures/` are real exports converted with `scri
 - **Deployment:** [Vercel](https://vercel.com/)
 
 ## 💻 Local Development
-
-### 1. Clone & Install
-```bash
-git clone https://github.com/elpeterson/archers-shoebox.git
-cd archers-shoebox
-npm install
-```
-
-### 2. Supabase
-Create a new Supabase project, then run [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql) in the SQL Editor. It creates the tables, RLS policies, the atomic `import_scorecard` function, and the private `scorecards` storage bucket.
-
-In **Authentication → URL Configuration**, add `http://localhost:3000/auth/callback` (and your production URL) to the redirect allow list.
-
-### 3. Environment
-```bash
-cp .env.example .env.local
-```
-Fill in `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from the project's API settings.
-
-### 4. Run
-```bash
-npm run dev
-```
+See the repository's README.
 
 ## 🧪 Testing
 ```bash
@@ -80,5 +58,5 @@ npm run test:coverage  # with coverage report
 
 To add a fixture from a new scorecard layout:
 ```bash
-node scripts/make-fixture.mjs path/to/scorecard.pdf lib/__tests__/fixtures/<name>.json
+node scripts/archery/make-fixture.mjs path/to/scorecard.pdf features/archery/lib/__tests__/fixtures/<name>.json
 ```
