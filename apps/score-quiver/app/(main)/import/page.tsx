@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@scoresquid/auth/server';
 import { ensureActiveArcher } from '@/app/actions/archer';
 import { ScorecardImport, type SetupDefaults } from '@/components/scorecard-import';
 

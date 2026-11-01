@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@scoresquid/auth/server';
 import { redirect } from 'next/navigation';
 import { CompetitionForm } from '@/components/competition-form';
 

@@ -1,5 +1,5 @@
-import { createClient } from '@/lib/supabase/server';
-import { LogoutButton } from './logout-button';
+import { createClient } from '@scoresquid/auth/server';
+import { LogoutButton } from '@scoresquid/auth/components/logout-button';
 import Link from 'next/link';
 
 export async function AuthButton() {

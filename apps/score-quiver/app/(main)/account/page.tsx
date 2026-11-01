@@ -1,9 +1,15 @@
-import { createClient } from '@/lib/supabase/server';
-import { PasswordForm } from '@/components/password-form';
+import { createClient } from '@scoresquid/auth/server';
+import { PasswordForm } from '@scoresquid/auth/components/password-form';
+import { updatePassword } from './actions';
 import { ArcherList } from '@/components/archer-list';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@scoresquid/ui/components/tabs';
 
-export default async function AccountPage() {
+export default async function AccountPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string | string[] }>;
+}) {
+  const { tab } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -21,7 +27,10 @@ export default async function AccountPage() {
         Account Settings
       </h2>
 
-      <Tabs defaultValue="archers" className="space-y-4">
+      <Tabs
+        defaultValue={tab === 'security' ? 'security' : 'archers'}
+        className="space-y-4"
+      >
         <TabsList>
           <TabsTrigger value="archers">Archers</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
@@ -32,7 +41,7 @@ export default async function AccountPage() {
         </TabsContent>
 
         <TabsContent value="security" className="space-y-4">
-          <PasswordForm />
+          <PasswordForm action={updatePassword} />
         </TabsContent>
       </Tabs>
     </div>

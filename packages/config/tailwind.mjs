@@ -65,10 +65,13 @@ const preset = {
 export default preset;
 
 /**
- * Content globs every app needs on top of its own: the shared UI package, so
- * its classes survive Tailwind's purge in production builds.
+ * Content globs every app needs on top of its own: the shared packages with
+ * UI, so their classes survive Tailwind's purge in production builds.
  * @param {string} appDir the app's directory (pass `__dirname`)
  */
 export function sharedContent(appDir) {
-  return [`${appDir}/../../packages/ui/**/*.{js,ts,jsx,tsx,mdx}`];
+  return [
+    `${appDir}/../../packages/ui/**/*.{js,ts,jsx,tsx,mdx}`,
+    `${appDir}/../../packages/auth/src/**/*.{ts,tsx}`,
+  ];
 }

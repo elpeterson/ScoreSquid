@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@scoresquid/auth/server';
 import { COMPETITIONS_PAGE_SIZE } from '@/lib/constants';
 
 export async function loadMoreCompetitions(gymnastId: string, offset: number) {

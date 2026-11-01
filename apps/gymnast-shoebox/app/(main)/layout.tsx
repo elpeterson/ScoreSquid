@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@scoresquid/auth/server';
 import Link from 'next/link';
-import { UserNav } from '@/components/user-nav';
+import { UserNav } from '@scoresquid/auth/components/user-nav';
+import { updateSetting } from '@/app/actions/settings';
 import { GymnastSwitcher } from '@/components/gymnast-switcher';
 import { ensureActiveGymnast } from '@/app/actions/gymnast';
 
@@ -59,7 +60,7 @@ export default async function MainLayout({
             >
               About
             </Link>
-            <UserNav email={user.email} />
+            <UserNav email={user.email} updateSetting={updateSetting} />
           </div>
         </div>
       </header>

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@scoresquid/auth/server';
 import { ensureActiveArcher } from '@/app/actions/archer';
 import { fetchArcherEvents } from '@/lib/events';
 import { setupGroups, trendForSetup } from '@/lib/stats';

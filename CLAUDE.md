@@ -4,12 +4,13 @@ Mobile-first app where parents record their gymnasts' meet scores (MAG and WAG),
 
 ## Where things live
 - **Monorepo: ScoreSquid** (`elpeterson/ScoreSquid`, the app family's name; SQ-015): the app lives in `apps/gymnast-shoebox/`; app paths below are relative to it. Root holds `package.json` (npm workspaces, Turborepo), `turbo.json`, `.github/`, `.claude/`, `.releaserc`. Shared packages live in `packages/` under the `@scoresquid/` scope. `apps/score-quiver/` is the archery sibling (its own Supabase project and login; not deployed yet, see its README). Releases run per app from its folder with `semantic-release-monorepo` (only commits touching that folder count).
-- **App:** Next.js 16 App Router. Pages in `app/(main)/` (dashboard, scores/new, competitions/[id]/edit, import, insights, account, about) and `app/(auth)/login/`. Auth callback `app/auth/callback/route.ts`. Session refresh and login redirects in `proxy.ts` (Next 16's middleware).
+- **App:** Next.js 16 App Router. Pages in `app/(main)/` (dashboard, scores/new, competitions/[id]/edit, import, insights, account, about) and `app/(auth)/login/`. Auth callback `app/auth/callback/route.ts` and session refresh in `proxy.ts` (Next 16's middleware) are thin wrappers.
+- **Auth:** `packages/auth` (`@scoresquid/auth`) holds the Supabase clients, proxy factory, callback, `safeNextPath`, `parseSettingUpdate`, and the login, password and user-menu UI; see its README. Each app wraps its functions in its own `'use server'` files. Code is shared, Supabase projects and logins are not.
 - **Server actions:** `app/actions/` (gymnast, mso, settings) and colocated `actions.ts` files. Every action is a public endpoint: treat its arguments as untrusted input.
-- **Logic:** `lib/` holds pure, tested helpers: `mso-api.ts` (JSON API client, query allowlist), `mso-parser.ts` (scrape parsing, `msoResultsUrl`), `insights.ts`, `constants.ts`, `competitions.ts` (`insertCompetitionWithScores`), `redirect.ts` (`safeNextPath`), `settings.ts` (`parseSettingUpdate`). Supabase clients in `lib/supabase/`.
+- **Logic:** `lib/` holds pure, tested helpers: `mso-api.ts` (JSON API client, query allowlist), `mso-parser.ts` (scrape parsing, `msoResultsUrl`), `insights.ts`, `constants.ts`, `competitions.ts` (`insertCompetitionWithScores`).
 - **UI:** `components/` (feature components); shared shadcn/ui components and `cn()` are in `packages/ui` (`@scoresquid/ui/components/<name>`; generated: change via the shadcn CLI, don't hand-edit).
 - **Database:** Supabase Postgres. Schema, RLS and the `competitions_with_scores` view are in `supabase/migrations/`. Tables: `gymnasts`, `competitions`, `scores` (unique per competition + apparatus), `user_settings`.
-- **Tests:** Vitest, `lib/__tests__/` with MSO fixtures in `lib/__tests__/fixtures/`.
+- **Tests:** Vitest, `lib/__tests__/` with MSO fixtures in `lib/__tests__/fixtures/`; auth tests in `packages/auth/src/__tests__/`.
 - **CI/CD:** `.github/workflows/`: `ci.yml` (lint, typecheck, test, build on PRs and main), `release.yml` (semantic-release on main), `vercel-checks.yml`, `supabase-keepalive.yml` (stopgap until the backend is self-hosted). Vercel deploys from GitHub; production is gymnastshoebox.elpeterson.com.
 - **Env:** `.env.example` lists the three variables. `.env.local` (in `apps/gymnast-shoebox/`) holds real values: never read or print it.
 

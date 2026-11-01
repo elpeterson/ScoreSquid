@@ -12,14 +12,18 @@ import {
   CardTitle,
 } from '@scoresquid/ui/components/card';
 import { toast } from 'sonner';
-import { updatePassword } from '@/app/(main)/account/actions';
+import type { ActionResult } from '../actions';
 
-export function PasswordForm() {
+export function PasswordForm({
+  action,
+}: {
+  action: (formData: FormData) => Promise<ActionResult>;
+}) {
   const [isPending, startTransition] = useTransition();
 
   const handleSubmit = async (formData: FormData) => {
     startTransition(async () => {
-      const result = await updatePassword(formData);
+      const result = await action(formData);
 
       if (result?.error) {
         toast.error('Error', { description: result.error });

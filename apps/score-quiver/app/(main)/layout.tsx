@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@scoresquid/auth/server';
 import Link from 'next/link';
-import { UserNav } from '@/components/user-nav';
+import { UserNav } from '@scoresquid/auth/components/user-nav';
+import { updateSetting } from '@/app/actions/settings';
 import { ArcherSwitcher } from '@/components/archer-switcher';
 import { ensureActiveArcher } from '@/app/actions/archer';
 
@@ -57,7 +58,7 @@ export default async function MainLayout({
             >
               Insights
             </Link>
-            <UserNav email={user.email} />
+            <UserNav email={user.email} updateSetting={updateSetting} />
           </div>
         </div>
       </header>

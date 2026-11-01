@@ -1,6 +1,5 @@
 'use client';
 
-import { updateSetting } from '@/app/actions/settings';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,29 +15,28 @@ import {
 } from '@scoresquid/ui/components/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@scoresquid/ui/components/avatar';
 import { Button } from '@scoresquid/ui/components/button';
-import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
 import { User, LogOut, Moon, Sun, Laptop } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
+import { useSignOut } from './use-sign-out';
 
-export function UserNav({ email }: { email: string | undefined }) {
-  const router = useRouter();
-  const supabase = createClient();
+export function UserNav({
+  email,
+  updateSetting,
+}: {
+  email: string | undefined;
+  /** The app's settings action; saves the theme to its settings table. */
+  updateSetting: (key: 'theme', value: string) => Promise<unknown>;
+}) {
+  const signOut = useSignOut();
   const { setTheme } = useTheme();
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.refresh();
-  };
 
   const initials = email?.substring(0, 2).toUpperCase() || 'U';
 
   const handleThemeChange = async (theme: string) => {
     setTheme(theme);
-    // Updates the centralized settings table
     await updateSetting('theme', theme);
-  };;
+  };
 
   return (
     <DropdownMenu>
@@ -97,7 +95,7 @@ export function UserNav({ email }: { email: string | undefined }) {
 
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onClick={handleLogout}
+          onClick={signOut}
           className="text-red-600 focus:text-red-600 cursor-pointer"
         >
           <LogOut className="mr-2 h-4 w-4" />
