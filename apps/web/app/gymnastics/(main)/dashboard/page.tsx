@@ -20,6 +20,18 @@ export default async function Dashboard() {
 
   const activeGymnastId = await ensureActiveGymnast();
 
+  if (!activeGymnastId) {
+    return (
+      <div className="max-w-xl mx-auto text-center py-16 space-y-3">
+        <h2 className="text-2xl font-bold">Welcome to ScoreSquid Gymnastics</h2>
+        <p className="text-muted-foreground">
+          Start by adding a gymnast with the switcher in the header, then add
+          or import their scores.
+        </p>
+      </div>
+    );
+  }
+
   const { data: gymnast } = await supabase
     .from('gymnast_athletes')
     .select('discipline')

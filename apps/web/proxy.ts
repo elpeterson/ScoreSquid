@@ -35,6 +35,6 @@ export const config = {
   matcher: [
     // Only real files skip the proxy. Excluding by extension would let /archery/archer/1.png
     // reach an internal route directly, on any host.
-    '/((?!_next/static|_next/image|favicon\\.ico$|icon\\.svg$).*)',
+    '/((?!_next/static|_next/image|_vercel/|favicon\\.ico$|icon\\.svg$).*)',
   ],
 };
