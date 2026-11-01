@@ -1,16 +1,16 @@
 'use client';
 
 import { useState, useTransition, useEffect, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@scoresquid/ui/components/button';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from '@scoresquid/ui/components/card';
+import { Input } from '@scoresquid/ui/components/input';
+import { Label } from '@scoresquid/ui/components/label';
 import {
   fetchMsoMeets,
   importMsoMeet,

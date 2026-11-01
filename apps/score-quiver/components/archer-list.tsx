@@ -1,16 +1,16 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button } from '@scoresquid/ui/components/button';
+import { Input } from '@scoresquid/ui/components/input';
+import { Label } from '@scoresquid/ui/components/label';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from '@scoresquid/ui/components/card';
 import { Pencil, Trash2, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { updateArcher, deleteArcher } from '@/app/actions/archer';
@@ -22,7 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from '@scoresquid/ui/components/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,7 +33,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+} from '@scoresquid/ui/components/alert-dialog';
 
 type Archer = {
   id: string;

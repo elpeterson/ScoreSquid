@@ -6,8 +6,8 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+} from '@scoresquid/ui/components/card';
+import { Button } from '@scoresquid/ui/components/button';
 import { Coffee } from 'lucide-react';
 import Link from 'next/link';
 

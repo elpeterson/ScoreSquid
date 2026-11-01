@@ -2,17 +2,17 @@
 
 import { useState, useTransition } from 'react';
 import { login, signup, resetPassword } from './actions';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button } from '@scoresquid/ui/components/button';
+import { Input } from '@scoresquid/ui/components/input';
+import { Label } from '@scoresquid/ui/components/label';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+} from '@scoresquid/ui/components/card';
+import { Alert, AlertDescription, AlertTitle } from '@scoresquid/ui/components/alert';
 import { AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react';
 
 export default function LoginPage() {

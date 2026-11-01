@@ -1,28 +1,28 @@
 'use client';
 
 import { useTransition, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+import { Button } from '@scoresquid/ui/components/button';
+import { Input } from '@scoresquid/ui/components/input';
+import { Label } from '@scoresquid/ui/components/label';
+import { Switch } from '@scoresquid/ui/components/switch';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from '@scoresquid/ui/components/card';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@scoresquid/ui/components/select';
 import { toast } from 'sonner';
 import { createScore, updateCompetition } from '@/app/(main)/scores/actions';
 import { useRouter } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import { cn } from '@scoresquid/ui/lib/utils';
 import {
   MAG_APPARATUS,
   WAG_APPARATUS,

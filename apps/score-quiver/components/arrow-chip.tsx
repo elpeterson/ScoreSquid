@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import { cn } from '@scoresquid/ui/lib/utils';
 
 // Colors follow the target face: gold 9-10, red 7-8, blue 5-6, black 3-4,
 // white 1-2, grey for a miss.

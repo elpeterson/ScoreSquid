@@ -1,16 +1,16 @@
 'use client';
 
 import { useTransition } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button } from '@scoresquid/ui/components/button';
+import { Input } from '@scoresquid/ui/components/input';
+import { Label } from '@scoresquid/ui/components/label';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from '@scoresquid/ui/components/card';
 import { toast } from 'sonner';
 import { updatePassword } from '@/app/(main)/account/actions';
 

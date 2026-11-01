@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@scoresquid/ui/components/card';
+import { Button } from '@scoresquid/ui/components/button';
 import { CompetitionActions } from '@/components/competition-actions';
 import { MAG_APPARATUS, WAG_APPARATUS, COMPETITIONS_PAGE_SIZE } from '@/lib/constants';
 import { loadMoreCompetitions } from '@/app/(main)/dashboard/actions';

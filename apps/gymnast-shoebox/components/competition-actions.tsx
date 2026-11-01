@@ -1,13 +1,13 @@
 'use client';
 
 import { MoreVertical, Trash2, Edit } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@scoresquid/ui/components/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@scoresquid/ui/components/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+} from '@scoresquid/ui/components/alert-dialog';
 import { deleteCompetition } from '@/app/(main)/scores/actions';
 import Link from 'next/link';
 import { toast } from 'sonner';

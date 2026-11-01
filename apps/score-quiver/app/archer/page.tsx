@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 import { archerIdFromParam } from '@/lib/betweenends/store';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@scoresquid/ui/components/button';
+import { Input } from '@scoresquid/ui/components/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@scoresquid/ui/components/card';
 
 export default async function ArcherLookupPage({
   searchParams,

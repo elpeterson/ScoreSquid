@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@scoresquid/ui/components/button';
+import { Alert, AlertDescription, AlertTitle } from '@scoresquid/ui/components/alert';
 import Link from 'next/link';
 
 export function BetaBanner() {
