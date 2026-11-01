@@ -63,6 +63,12 @@ export async function saveScorecard(
   } = await supabase.auth.getUser();
   if (!user) return { error: 'Not authenticated' };
 
+  // The browser uploads the PDF and names the path; it must be in the user's folder.
+  const { source_path } = parsed.data.event;
+  if (source_path && !source_path.startsWith(`${user.id}/`)) {
+    return { error: 'This scorecard has invalid data and was not saved.' };
+  }
+
   const { data, error } = await supabase.rpc('import_scorecard', {
     payload: parsed.data,
   });

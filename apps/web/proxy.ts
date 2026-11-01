@@ -20,7 +20,7 @@ export async function proxy(request: NextRequest) {
   const chosen = searchParams.get('sport');
   if (isSport(chosen) && !isRootDomainHost(hostname)) {
     const response = NextResponse.redirect(new URL('/', request.url));
-    response.cookies.set(SPORT_COOKIE, chosen);
+    response.cookies.set(SPORT_COOKIE, chosen, { path: '/', sameSite: 'lax' });
     return response;
   }
 
@@ -33,6 +33,8 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Only real files skip the proxy. Excluding by extension would let /archery/archer/1.png
+    // reach an internal route directly, on any host.
+    '/((?!_next/static|_next/image|favicon\\.ico$|icon\\.svg$).*)',
   ],
 };

@@ -45,7 +45,7 @@ async function fetchMsoMeetsScrape(msoId: string): Promise<FetchMeetsResult> {
 
   try {
     const response = await fetch(
-      `https://www.meetscoresonline.com/Athlete.MyScores/${msoId}`,
+      `https://www.meetscoresonline.com/Athlete.MyScores/${encodeURIComponent(msoId)}`,
       {
         next: { revalidate: 300 }, // cache meet list for 5 minutes
         headers: {
