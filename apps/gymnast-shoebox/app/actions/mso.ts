@@ -1,7 +1,7 @@
 'use server';
 
 import * as cheerio from 'cheerio';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@scoresquid/auth/server';
 import { revalidatePath } from 'next/cache';
 import { ensureActiveGymnast } from './gymnast';
 import { parseScoreRow, parseMeetDates, msoResultsUrl } from '@/lib/mso-parser';

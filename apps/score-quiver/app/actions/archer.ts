@@ -2,7 +2,8 @@
 
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { deleteProfileWithFiles } from '@scoresquid/auth/profile';
+import { createClient } from '@scoresquid/auth/server';
 import { revalidatePath } from 'next/cache';
 
 const COOKIE_NAME = 'score_quiver_active_archer';
@@ -112,22 +113,33 @@ export async function deleteArcher(id: string) {
     return { error: 'You cannot delete your only archer profile.' };
   }
 
-  // Remove the archer's stored scorecard PDFs before the rows cascade away.
-  const { data: events } = await supabase
-    .from('events')
-    .select('source_path')
-    .eq('archer_id', id)
-    .not('source_path', 'is', null);
-  const paths = (events ?? []).map((e) => e.source_path as string);
-  if (paths.length) await supabase.storage.from('scorecards').remove(paths);
+  const { error } = await deleteProfileWithFiles({
+    // The archer's scorecard PDFs: their rows cascade away with the archer.
+    listFiles: async () => {
+      const { data, error } = await supabase
+        .from('events')
+        .select('source_path')
+        .eq('archer_id', id)
+        .eq('user_id', user.id)
+        .not('source_path', 'is', null);
+      if (error) throw new Error(error.message);
+      return (data ?? []).map((e) => e.source_path as string);
+    },
+    deleteRow: async () => {
+      const { error } = await supabase
+        .from('archers')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+      if (error) throw new Error(error.message);
+    },
+    removeFiles: async (paths) => {
+      const { error } = await supabase.storage.from('scorecards').remove(paths);
+      if (error) throw new Error(error.message);
+    },
+  });
 
-  const { error } = await supabase
-    .from('archers')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
-
-  if (error) return { error: error.message };
+  if (error) return { error };
 
   revalidatePath('/account');
   revalidatePath('/');

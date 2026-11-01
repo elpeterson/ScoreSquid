@@ -23,7 +23,7 @@ import {
 } from '@scoresquid/ui/components/select';
 import { ArrowChip } from '@/components/arrow-chip';
 import { cn } from '@scoresquid/ui/lib/utils';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@scoresquid/auth/client';
 import { extractTextItems } from '@/lib/scorecard/extract';
 import { parseScorecard } from '@/lib/scorecard/parse';
 import type { ParsedScorecard } from '@/lib/scorecard/types';

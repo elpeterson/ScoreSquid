@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, FileText } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@scoresquid/auth/server';
 import { EVENT_SELECT, type EventDetail } from '@/lib/events';
 import { computeEventStats, eventDate, setupLabel } from '@/lib/stats';
 import { formatDate, formatNumber, formatPercent } from '@/lib/format';

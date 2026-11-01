@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@scoresquid/auth/server';
 
 const arrow = z.enum(['X', '10', '9', '8', '7', '6', '5', '4', '3', '2', '1', 'M']);
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable();
