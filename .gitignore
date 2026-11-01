@@ -43,3 +43,7 @@ next-env.d.ts
 
 # Turborepo
 .turbo/
+
+# Supabase CLI local state
+**/supabase/.temp/
+**/supabase/.branches/
