@@ -13,7 +13,7 @@ create table public.athletes (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users(id) on delete cascade not null,
   sport text not null check (sport in ('gymnastics', 'archery')),
-  name text not null,
+  name text not null check (char_length(name) > 0),
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null,
   constraint athletes_id_sport_unique unique (id, sport)
@@ -49,7 +49,7 @@ create table public.gym_competitions (
   user_id uuid references auth.users(id) on delete cascade not null,
   athlete_id uuid not null,
   sport text default 'gymnastics' not null check (sport = 'gymnastics'),
-  name text not null,
+  name text not null check (char_length(name) > 0),
   start_date date,
   end_date date,
   level text,      -- e.g. '4' (men's DP), 'Gold' (women's Xcel)
@@ -68,8 +68,8 @@ create index gym_competitions_athlete_idx on public.gym_competitions (athlete_id
 create table public.gym_scores (
   id uuid default gen_random_uuid() primary key,
   competition_id uuid references public.gym_competitions(id) on delete cascade not null,
-  apparatus text not null,
-  value numeric,       -- null for future or incomplete meets
+  apparatus text not null check (char_length(apparatus) > 0),
+  value numeric check (value >= 0), -- null for future or incomplete meets
   start_value numeric,
   place integer,
   created_at timestamptz default now() not null,

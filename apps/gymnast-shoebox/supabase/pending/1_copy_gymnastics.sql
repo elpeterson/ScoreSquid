@@ -6,6 +6,9 @@
 -- new app is live, or it would overwrite newer data.
 --
 -- All or nothing: a failed count check at the end rolls everything back.
+--
+-- The live old tables were built by hand and allow nulls where the new ones don't,
+-- so nulls become each column's default.
 
 begin;
 
@@ -27,13 +30,13 @@ on conflict (id) do update set
   user_id = excluded.user_id, name = excluded.name, updated_at = excluded.updated_at;
 
 insert into public.gymnast_profiles (athlete_id, mso_id, discipline)
-select id, mso_id, discipline
+select id, mso_id, coalesce(discipline, 'MAG')
 from public.gymnasts
 on conflict (athlete_id) do update set
   mso_id = excluded.mso_id, discipline = excluded.discipline;
 
 insert into public.gym_settings (user_id, show_start_values, show_placements, updated_at)
-select user_id, show_start_values, show_placements, updated_at
+select user_id, coalesce(show_start_values, false), coalesce(show_placements, true), coalesce(updated_at, now())
 from public.user_settings
 on conflict (user_id) do update set
   show_start_values = excluded.show_start_values,
@@ -46,7 +49,7 @@ insert into public.gym_competitions (
 )
 select
   id, user_id, gymnast_id, name, start_date, end_date, level, division,
-  all_around_place, show_start_value, show_place, created_at, updated_at
+  all_around_place, coalesce(show_start_value, false), coalesce(show_place, true), created_at, updated_at
 from public.competitions
 on conflict (id) do update set
   user_id = excluded.user_id, athlete_id = excluded.athlete_id, name = excluded.name,
