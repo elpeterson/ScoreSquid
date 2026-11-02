@@ -90,6 +90,10 @@ export function createBeClient(options: ClientOptions = {}) {
         if (res.status === 404) return { status: 'not-found' };
         if (res.ok) return { status: 'ok', data: (await res.json()) as T, etag: res.headers.get('etag') };
         lastError = new Error(`Between Ends ${path} failed: HTTP ${res.status}`);
+        if (res.status === 429 && attempt < attempts) {
+          await sleep(retryAfterMs(res.headers.get('retry-after')));
+          continue;
+        }
         if (res.status < 500) break;
       } catch (err) {
         lastError = err;
@@ -118,6 +122,12 @@ export function createBeClient(options: ClientOptions = {}) {
 }
 
 export type BeClient = ReturnType<typeof createBeClient>;
+
+/** Waits as asked, within reason; a longer wait fails the search for a retry later. */
+function retryAfterMs(header: string | null): number {
+  const seconds = Number(header);
+  return (Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds, 60) : 30) * 1000;
+}
 
 function intId(id: number): number {
   if (!Number.isSafeInteger(id) || id <= 0) throw new Error(`Invalid Between Ends id: ${id}`);

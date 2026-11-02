@@ -31,6 +31,8 @@ export const config = {
   matcher: [
     // Only real files skip the proxy. Excluding by extension would let /archery/events/1.png
     // reach an internal route directly, on any host.
-    '/((?!_next/static|_next/image|_vercel/|favicon\\.ico$|icon\\.svg$).*)',
+    // Workflow's routes are authenticated by Vercel. Anywhere else, block external access to
+    // /.well-known/workflow/v1/flow, as it would accept any well-formed request.
+    '/((?!_next/static|_next/image|_vercel/|\\.well-known/workflow/|favicon\\.ico$|icon\\.svg$).*)',
   ],
 };

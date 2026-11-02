@@ -41,7 +41,7 @@ The request range uses this sample's 1.0 ranking events per tournament and the a
 
 What follows from these:
 - A cache of numbers alone doesn't work: half the events need name matching, which needs names (SQ-019 criterion 6).
-- A tournament can't be treated as final once it ends. Compare `updated_at`, then use the ETag. Whether `updated_at` moves on every score edit is still unknown, so a stored event should still be revalidated by ETag.
+- A tournament can't be treated as final once it ends. Compare `updated_at`, then use the ETag. Whether `updated_at` moves on every score edit is still unknown, so one cache hit in 20 is checked by ETag, and a miss is logged as `an event changed without updated_at moving`. Scores are read fresh on every match regardless.
 - No `CombinedRankingEvent` was in the sample, so check its shape before the crawler relies on it.
 
 ## Local proof
@@ -82,15 +82,31 @@ What this means for the build:
 ## Design for the build
 - **Start:** the server action calls `start_be_search`, which copies the number and name from the archer's profile, then calls `start(crawl, [searchId], { experimental_retention: 0 })`.
 - **One reader:** a unique index allows only one `running` search. One run drains the queue, then ends, so nothing reads Between Ends when no search is waiting.
-- **Restartable:** Postgres is the record of progress, not the run. Each batch saves what it read. If a running search's heartbeat is stale when its owner views it or a new search starts, a fresh run takes it over and skips what's saved. That needs no schedule.
+- **Restartable:** Postgres is the record of progress, not the run. Each batch saves what it read. If a search has been silent for 15 minutes when its owner views it, or a new search starts, a fresh run takes it over and skips what's saved. `kick_be_search` limits viewing to one restart per search every 15 minutes. That needs no schedule.
 - **Cancel:** a function sets the status, and the crawler checks it between batches. Parents have no direct update rights on a search.
 - **Pacing:** wait out the interval at the end of each step, because the next step may get a new client with no memory of the last request.
-- **Client gap:** a `429` isn't retried and `Retry-After` is ignored. Treat it as a pause (criterion 7).
+- **`429`:** the client waits as `Retry-After` asks, up to 60 s, then the search fails and can be retried (criterion 7).
+- **Discovery:** Workflow only compiles workflows that something in the build imports, and no screen uses `actions/between-ends.ts` yet, so the build reports `0 workflows` for now. The SQ-019 screen must bring that to `1 workflow`: check the `Compiled workflows` line in the build output. A temporary route importing the action confirmed this.
 - **Proxy:** `proxy.ts` must exclude `.well-known/workflow/`, or Workflow's internal calls hit the auth proxy.
 - **Dependency warning:** the build warns about mismatched `@vercel/oidc` versions (3.x and 4.0.5) inside Workflow's dependencies. It didn't affect the local proof or the preview test.
 
+## Real data test
+The real store and `be_crawler` role, on a disposable Postgres, ran two searches over the same 30 days of Between Ends at the real 1.1 s pace:
+
+| | Tournaments | Requests | Time |
+|---|---|---|---|
+| First search, cache empty | 28 | 59 | 64 s |
+| Second search, a different archer, cache filled | 28 | 4 | 3 s |
+
+The cache held 1,989 archers across 35 events, 479 of them with no number. This did not go through Vercel Workflow or a server action; those need a deployment.
+
+## Known limits
+- **Queue:** one person with many accounts could keep the one-at-a-time queue full. A global cap would let them block new searches instead, so there isn't one; requests stay paced either way.
+- **TLS:** the pooler connection is encrypted but doesn't verify Supabase's certificate. Verifying it means supplying their root CA.
+- **Self-hosting:** Workflow's routes rely on Vercel's authentication, so block them at the proxy before moving anywhere else.
+
 ## Crawler credential
-The migration gives `be_crawler` only the cache and search-progress columns. The password is set by hand, never in a migration. Connect through the shared pooler as `be_crawler.<project-ref>` on port 6543, since it has IPv4 on every plan and transaction mode suits serverless, with prepared statements off. This adds a `pg` or `postgres` dependency and has **not been tried on hosted Supabase**.
+The migration gives `be_crawler` only the cache and search-progress columns. The password is set by hand, never in a migration. Connect through the shared pooler as `be_crawler.<project-ref>` on port 6543, since it has IPv4 on every plan and transaction mode suits serverless, with prepared statements off. This adds a `pg` or `postgres` dependency and was confirmed on hosted Supabase on 2026-11-02. Vercel Production needs it as `BE_CRAWLER_DATABASE_URL`.
 
 ## Schema and checks
 The schema is `supabase/migrations/20261102160000_between_ends_crawler.sql`, with retention in `20261102170000_be_cache_retention.sql`. `checks.sql` tests its access rules in a rolled-back transaction: every check on plain Postgres 17 with `stubs.sql`, and those that don't need the crawler role on the local Supabase image.
@@ -100,6 +116,7 @@ docker run -d --rm --name sq004-pg -e POSTGRES_HOST_AUTH_METHOD=trust postgres:1
 docker cp ../../../supabase/migrations/20261102160000_between_ends_crawler.sql sq004-pg:/migration.sql
 sed '/create extension/d' ../../../supabase/migrations/20261102170000_be_cache_retention.sql > /tmp/retention.sql
 docker cp /tmp/retention.sql sq004-pg:/retention.sql
+docker cp ../../../supabase/migrations/20261102180000_kick_be_search.sql sq004-pg:/kick.sql
 docker exec -i sq004-pg psql -q -U postgres < stubs.sql
 docker exec -i sq004-pg psql -U postgres -v crawler=1 < checks.sql 2>&1 | grep -E "PASS|FAIL|ERROR"
 docker rm -f sq004-pg

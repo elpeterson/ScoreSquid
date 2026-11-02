@@ -240,3 +240,25 @@ describe('client', () => {
     expect(sleeps).toEqual([1000, 1000]);
   });
 });
+
+describe('Between Ends client on a 429', () => {
+  const limited = (retryAfter: string) => new Response('', { status: 429, headers: { 'retry-after': retryAfter } });
+  const okBody = () => new Response('[]', { status: 200 });
+
+  it('waits as asked, then retries', async () => {
+    const sleep = vi.fn(async () => undefined);
+    const fetchMock = vi.fn().mockResolvedValueOnce(limited('7')).mockResolvedValueOnce(okBody());
+    const client = createBeClient({ fetch: fetchMock as unknown as typeof fetch, sleep, now: () => 0, minIntervalMs: 0 });
+    expect((await client.tournaments()).status).toBe('ok');
+    expect(sleep).toHaveBeenCalledWith(7000);
+  });
+
+  it('caps a long wait, and gives up after its attempts', async () => {
+    const sleep = vi.fn(async () => undefined);
+    const fetchMock = vi.fn(async () => limited('3600'));
+    const client = createBeClient({ fetch: fetchMock as unknown as typeof fetch, sleep, now: () => 0, minIntervalMs: 0 });
+    await expect(client.tournaments()).rejects.toThrow('HTTP 429');
+    expect(sleep).toHaveBeenCalledWith(60_000);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+});
