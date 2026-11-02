@@ -139,7 +139,7 @@ function SearchPanel({
       setView(await getBeSearch(started.searchId));
     });
 
-  const cancel = () =>
+  const stop = () =>
     startTransition(async () => {
       if (!searchId) return;
       const result = await cancelBeSearch(searchId);
@@ -149,7 +149,7 @@ function SearchPanel({
 
   return (
     <div className="space-y-4">
-      {view && search && <SearchStatusLine view={view} onCancel={cancel} pending={pending} />}
+      {view && search && <SearchStatusLine view={view} onStop={stop} pending={pending} />}
 
       {!active && from && (
         <div className="flex flex-wrap items-center gap-2">
@@ -187,11 +187,11 @@ function SearchPanel({
 
 function SearchStatusLine({
   view,
-  onCancel,
+  onStop,
   pending,
 }: {
   view: BeSearchView;
-  onCancel: () => void;
+  onStop: () => void;
   pending: boolean;
 }) {
   const { search, matches } = view;
@@ -223,9 +223,12 @@ function SearchStatusLine({
           This can take a while. You can leave this page: the search keeps going, and you can come
           back to it here.
         </p>
-        <Button variant="outline" size="sm" onClick={onCancel} disabled={pending}>
-          Cancel search
+        <Button variant="outline" size="sm" onClick={onStop} disabled={pending}>
+          Stop search
         </Button>
+        <p className="text-xs text-muted-foreground">
+          Stopping keeps any tournaments found so far.
+        </p>
       </div>
     );
   }
@@ -240,7 +243,13 @@ function SearchStatusLine({
   }
 
   if (search.status === 'cancelled') {
-    return <p className="text-sm text-muted-foreground">You cancelled this search.</p>;
+    const read = `You stopped this search after reading ${search.tournaments_done} of ${search.tournaments_total} tournaments.`;
+    return (
+      <p className="text-sm text-muted-foreground">
+        {read}{' '}
+        {matches.length > 0 ? 'What it found is kept below.' : 'It had not found anything yet.'}
+      </p>
+    );
   }
 
   if (matches.length === 0) {

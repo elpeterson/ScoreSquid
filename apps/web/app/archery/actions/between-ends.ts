@@ -66,7 +66,7 @@ export async function cancelBeSearch(searchId: string): Promise<{ error?: string
   } = await supabase.auth.getUser();
   if (!user) return { error: 'Please sign in' };
   const { error } = await supabase.rpc('cancel_be_search', { p_id: searchId });
-  return error ? { error: 'There is no running search to cancel' } : {};
+  return error ? { error: 'There is no running search to stop' } : {};
 }
 
 export type BeSearchView = {
