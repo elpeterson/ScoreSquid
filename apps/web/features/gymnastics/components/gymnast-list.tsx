@@ -161,13 +161,13 @@ function GymnastRow({ gymnast }: { gymnast: Gymnast }) {
                     id="mso_id"
                     name="mso_id"
                     defaultValue={gymnast.mso_id || ''}
-                    placeholder="e.g. 1184668"
+                    placeholder="e.g. 1234567"
                   />
                   <p className="text-[11px] text-muted-foreground">
                     Found in the URL:{' '}
                     <code>
                       meetscoresonline.com/Athlete.MyScores/
-                      <strong>1184668</strong>
+                      <strong>1234567</strong>
                     </code>
                   </p>
                 </div>
