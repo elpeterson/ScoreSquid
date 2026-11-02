@@ -7,6 +7,7 @@ import { CompetitionActions } from '@/features/gymnastics/components/competition
 import { MAG_APPARATUS, WAG_APPARATUS, COMPETITIONS_PAGE_SIZE } from '@/features/gymnastics/lib/constants';
 import { loadMoreCompetitions } from '@/app/gymnastics/(main)/dashboard/actions';
 import { toast } from 'sonner';
+import { formatDate } from '@/lib/dates';
 
 type ScoreItem = {
   apparatus: string;
@@ -93,23 +94,12 @@ export function CompetitionList({
                     <span className="italic">Date TBD</span>
                   ) : (
                     <>
-                      {new Date(comp.start_date).toLocaleDateString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
+                      {formatDate(comp.start_date)}
                       {comp.end_date && comp.end_date !== comp.start_date && (
                         <>
                           {' '}
                           –{' '}
-                          {new Date(comp.end_date).toLocaleDateString(
-                            undefined,
-                            {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                            },
-                          )}
+                          {formatDate(comp.end_date)}
                         </>
                       )}
                     </>
