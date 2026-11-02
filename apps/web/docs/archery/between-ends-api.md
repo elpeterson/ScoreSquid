@@ -5,7 +5,7 @@ Findings from probing `resultsapi.herokuapp.com` (the JSON backend behind betwee
 ## TL;DR
 - **Five read endpoints, no auth, open CORS** (`Access-Control-Allow-Origin: *`), weak ETags that return `304` on `If-None-Match`.
 - **There is no archer endpoint and no search.** Query strings are ignored. The only way to find "every result for one archer" is to crawl tournaments → events → entries and build our own index.
-- **`aid` is a per-event entry ID, not a person.** The cross-tournament key is `alt`, the archer's membership number (USA Archery style, usually 6 digits). It was filled on 86% of a larger sample of entries. Name + team + division is the fallback.
+- **`aid` is a per-event entry ID, not a person.** The cross-tournament key is `alt`, the archer's membership number (USA Archery style, usually 6 digits). It was filled on 78% to 86% of entries in the samples so far. Name + team + division is the fallback.
 - **Arrows come as one string per entry** (`"T98M7…"`), one character per arrow, decoded by a fixed table. Every arrow is available, so all of ScoreSquid Archery's insights work from the API alone.
 - **The membership number is the way in.** Every archer knows it, and it's what `alt` holds. PDF upload is a secondary path, for confirming a match or recovering results where `alt` was left blank.
 
@@ -99,35 +99,21 @@ Not yet sampled: `CombinedRankingEvent`, `SpecialEvent`, outdoor ranking rounds 
 
 ## What this means for ScoreSquid Archery
 
-### 1. We need our own index (a crawler)
-There's no "archer → results" lookup, so the archer view reads from tables we fill:
+### 1. A search has to read tournaments
+There's no "archer → results" lookup, so a search a parent starts reads each tournament in its date range. Nothing is scheduled and there is no full backfill. [The SQ-004 spike](sq-004/README.md) has the runner, what is kept, and current costs; its private `be_*` tables replace the public-read plan once described here.
 
-```
-be_tournaments(id, name, location, start_date, end_date, updated_at, etag, crawled_at)
-be_events(id, tournament_id, type, name, rounds, ends_per_round, arrows_per_end,
-          scoring_rule, sessions jsonb, etag, crawled_at)
-be_entries(event_id, aid, alt_raw, alt_norm, first_name, last_name, team,
-           division_code, division_name, targets text[], session_ids int[],
-           arrows text, round_totals text, tiebreaks text, rank, total)
-  primary key (event_id, aid);  index on alt_norm;  index on lower(last_name, first_name)
-```
-
-- **Backfill:** 1 + 1,560 tournament calls + ~2 × 3,500 event calls ≈ 8.6k requests. At 1 request a second that's about 2.5 hours, run once.
-- **Incremental:** pull `/tournaments/` (one call), re-crawl only tournaments whose `updated_at` moved, and send `If-None-Match` so unchanged events cost a `304`. Tournaments in progress get polled more often.
-- **Volume estimate:** about 55 entries per ranking event in the sample, so roughly 150–200k entries. That fits easily in Supabase free tier.
-- **Where it runs:** a scheduled GitHub Action or Vercel cron writing with the service role. The `be_*` tables are public cache data: anyone can read, only the crawler writes, and none of it carries `user_id`. That's a deliberate exception to the "RLS by `auth.uid()`" rule, so it needs writing down in the migration.
-- **Be a good neighbour:** Between Ends is a one-person, Ko-fi-supported Heroku app. Keep a ~1 req/s ceiling, set a descriptive `User-Agent` with a contact, and consider asking the maintainer before the backfill.
+**Be a good neighbour:** Between Ends is a one-person, Ko-fi-supported Heroku app. Keep to the ceiling in the spike, set a descriptive `User-Agent` with a contact, and consider asking the maintainer before search ships.
 
 ### 2. Identity: what is an "ArcherID"
 - Primary: `alt_norm` (the USA Archery membership number) = `alt` trimmed, digits only (`"123456C"` → `123456`?). Whether the suffix is meaningful (club? a typo?) is an open question, so keep `alt_raw` too.
-- Fallback when `alt` is blank or `N/A` (~5%): offer "possible matches" by normalised name + team + division age band, which the user confirms. Never merge them automatically.
+- Fallback when `alt` is blank or `N/A` (about 14% to 22%): offer "possible matches" by normalised name + team + division age band, which the user confirms. Never merge them automatically.
 - The MVP URL is `/archer/<alt>`: all tournaments, every score, trends, PBs, per-setup comparisons. This reuses `lib/stats.ts` and `lib/division.ts`.
 
 ### 3. Finding your ArcherID
 Every archer knows their USA Archery membership number, and that number is what `alt` holds, so the number *is* the ArcherID.
 1. **Primary: enter the membership number.** A lookup on `be_entries.alt_norm` goes straight to `/archer/<number>`.
 2. **Fallback: upload a scorecard PDF** (existing parser) for entries where the organiser left `alt` blank, or to check that a number matches the right person. The card gives tournament name, event, name, division, target and session. Match tournament by name + date, then the entry by name + division + target, then read `alt`. The PDF is parsed in the browser and not stored in MVP.
-3. **Unlinked results:** entries with a blank `alt` (~5%) show as "possible matches" on the archer page (same name + team + division age band) for the user to confirm. They're never merged automatically.
+3. **Unlinked results:** entries with a blank `alt` (about 14% to 22%) show as "possible matches" on the archer page (same name + team + division age band) for the user to confirm. They're never merged automatically.
 4. Name search, **post-MVP** (see privacy below).
 
 ### 4. Fit with the existing schema
@@ -144,12 +130,8 @@ Between Ends already publishes names and scores per tournament. A single page th
 1. What do `alt` suffixes like `C` mean, and is the same person ever listed under two numbers?
 2. Do `CombinedRankingEvent` / `SpecialEvent` carry `alt` and arrows? (Sample before the crawler handles them.)
 3. Does `tournaments.updated_at` change on every score edit, or only on setup changes? This decides whether it's a reliable change feed.
-4. Should we contact the Between Ends maintainer before the backfill? It's a courtesy, and they might offer a bulk export.
+4. Should we contact the Between Ends maintainer before search ships? It's a courtesy, and they might offer a bulk export.
 5. MVP privacy guardrails above: agree or adjust.
 
-## Proposed next steps
-1. `lib/betweenends/` holds a typed client (allowlisted paths only, ETag-aware, rate-limited) plus decoders (`decodeArrows`, `entryTotals`, `normaliseAlt`), tested against redacted fixtures.
-2. A migration for the `be_*` tables with public-read RLS.
-3. A crawler script, run locally first against ~20 tournaments.
-4. An `/archer/[alt]` page built on the existing stats.
-5. PDF → `alt` lookup on the import page.
+## Next steps
+Tracked as SQ-004, SQ-019, SQ-020 and SQ-021. The public `/archer` pages described above were removed on 2026-11-02, so the sections on them and on public-page privacy are history, not plans.
