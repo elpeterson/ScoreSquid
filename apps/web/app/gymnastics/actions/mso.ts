@@ -14,6 +14,13 @@ import {
   type SavedMeet,
 } from '@/features/gymnastics/lib/meet-match';
 import {
+  buildMeetUpdate,
+  diffMeet,
+  type MeetChange,
+  type MsoMeetData,
+  type SavedCompetition,
+} from '@/features/gymnastics/lib/meet-diff';
+import {
   msoQuery,
   parseGymnastMeets,
   parseMeetResult,
@@ -26,6 +33,8 @@ export type MsoMeetSummary = {
   level: string;
   detailsUrl: string;
   isImported?: boolean;
+  // The saved competition this meet was imported as, when it was.
+  savedId?: string;
   // Present when the summary came from the JSON API (enables the JSON import
   // path, which also carries division). Absent for scraped summaries.
   meetId?: string;
@@ -41,24 +50,24 @@ type FetchMeetsResult =
   | { success: true; meets: MsoMeetSummary[]; error?: undefined };
 
 type ImportResult =
-  | { error: string; success?: undefined; warning?: undefined }
-  | { success: true; warning?: string; error?: undefined };
+  | { error: string; success?: undefined; warning?: undefined; savedId?: undefined }
+  | { success: true; warning?: string; savedId?: string; error?: undefined };
 
 const ALREADY_IMPORTED = 'This meet is already imported.';
 
 /**
- * Whether each meet is already imported for this gymnast. An older import with
+ * The saved competition each meet was imported as, or null. An older import with
  * no MSO ID gets one here, so it stays recognised if it's renamed later.
  */
-async function importedFlags(
+async function importedMeetIds(
   supabase: Awaited<ReturnType<typeof createClient>>,
   athleteId: string,
   meets: MsoMeetRef[],
-): Promise<boolean[]> {
+): Promise<(string | null)[]> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return meets.map(() => false);
+  if (!user) return meets.map(() => null);
 
   const { data } = await supabase
     .from('gym_competitions')
@@ -80,7 +89,7 @@ async function importedFlags(
     }),
   );
 
-  return matches.map((m) => m.saved !== null);
+  return matches.map((m) => m.saved?.id ?? null);
 }
 
 async function fetchMsoMeetsScrape(msoId: string): Promise<FetchMeetsResult> {
@@ -146,7 +155,7 @@ async function fetchMsoMeetsScrape(msoId: string): Promise<FetchMeetsResult> {
 
     if (!activeGymnastId) return { error: 'Authentication required' };
 
-    const flags = await importedFlags(
+    const savedIds = await importedMeetIds(
       supabase,
       activeGymnastId,
       meets.map((m) => ({
@@ -156,12 +165,66 @@ async function fetchMsoMeetsScrape(msoId: string): Promise<FetchMeetsResult> {
       })),
     );
 
-    const processedMeets = meets.map((m, i) => ({ ...m, isImported: flags[i] }));
+    const processedMeets = meets.map((m, i) => ({
+      ...m,
+      isImported: savedIds[i] !== null,
+      savedId: savedIds[i] ?? undefined,
+    }));
 
     return { success: true, meets: processedMeets };
   } catch {
     return { error: 'Error parsing MSO data' };
   }
+}
+
+/** Read a meet's results page. Throws if the page can't be fetched. */
+async function scrapeMeetDetails(
+  detailsUrl: string,
+  meet: MsoMeetSummary,
+): Promise<Omit<MsoMeetData, 'scores'> & { scores: { apparatus: string; value: number; place: number | null }[] }> {
+  const response = await fetch(detailsUrl, {
+    headers: {
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    },
+  });
+
+  if (!response.ok) throw new Error(`MSO results page: HTTP ${response.status}`);
+
+  const html = await response.text();
+  const $ = cheerio.load(html);
+
+  const name = $('h1.event-title').text().trim() || meet.name;
+  const realDateStr = $('#MeetDetails h5 strong').first().text().trim() || meet.dateStr;
+
+  const scores: { apparatus: string; value: number; place: number | null }[] = [];
+  let allAroundPlace: number | null = null;
+
+  $('#athlete table tbody tr').each((i, row) => {
+    const $row = $(row);
+    const eventLabel = $row.find('th').text().trim();
+    const scoreText = $row.find('span.score').text().trim();
+    const placeText = $row.find('span.place').text().trim();
+
+    if (eventLabel === 'AA') {
+      const place = parseInt(placeText.replace('T', ''));
+      if (!isNaN(place)) allAroundPlace = place;
+    } else {
+      const parsed = parseScoreRow(eventLabel, scoreText, placeText);
+      if (parsed) scores.push(parsed);
+    }
+  });
+
+  const { startDate, endDate } = parseMeetDates(realDateStr);
+  return {
+    name,
+    level: meet.level || null,
+    division: null,
+    startDate,
+    endDate,
+    allAroundPlace,
+    scores,
+  };
 }
 
 async function importMsoMeetScrape(meet: MsoMeetSummary): Promise<ImportResult> {
@@ -177,41 +240,14 @@ async function importMsoMeetScrape(meet: MsoMeetSummary): Promise<ImportResult> 
   if (!detailsUrl) return { error: 'Invalid meet link' };
 
   try {
-    const response = await fetch(detailsUrl, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      },
-    });
-
-    const html = await response.text();
-    const $ = cheerio.load(html);
-
-    let realName = $('h1.event-title').text().trim();
-    if (!realName) realName = meet.name;
-
-    const realDateStr =
-      $('#MeetDetails h5 strong').first().text().trim() || meet.dateStr;
-
-    const scoresToInsert: { apparatus: string; value: number; place: number | null }[] = [];
-    let allAroundPlace: number | null = null;
-
-    $('#athlete table tbody tr').each((i, row) => {
-      const $row = $(row);
-      const eventLabel = $row.find('th').text().trim();
-      const scoreText = $row.find('span.score').text().trim();
-      const placeText = $row.find('span.place').text().trim();
-
-      if (eventLabel === 'AA') {
-        const place = parseInt(placeText.replace('T', ''));
-        if (!isNaN(place)) allAroundPlace = place;
-      } else {
-        const parsed = parseScoreRow(eventLabel, scoreText, placeText);
-        if (parsed) scoresToInsert.push(parsed);
-      }
-    });
-
-    const { startDate, endDate } = parseMeetDates(realDateStr);
+    const {
+      name: realName,
+      level,
+      startDate,
+      endDate,
+      allAroundPlace,
+      scores: scoresToInsert,
+    } = await scrapeMeetDetails(detailsUrl, meet);
 
     const inserted = await insertCompetitionWithScores(
       supabase,
@@ -220,7 +256,7 @@ async function importMsoMeetScrape(meet: MsoMeetSummary): Promise<ImportResult> 
         athlete_id: gymnastId,
         mso_meet_id: msoMeetIdFromUrl(detailsUrl),
         name: realName,
-        level: meet.level,
+        level,
         start_date: startDate,
         end_date: endDate,
         all_around_place: allAroundPlace,
@@ -236,12 +272,13 @@ async function importMsoMeetScrape(meet: MsoMeetSummary): Promise<ImportResult> 
     if (scoresToInsert.length === 0) {
       return {
         success: true,
+        savedId: inserted.competitionId,
         warning: "Meet created, but score table format didn't match.",
       };
     }
 
     revalidatePath('/gymnastics/dashboard');
-    return { success: true };
+    return { success: true, savedId: inserted.competitionId };
   } catch {
     return { error: 'Failed to import meet' };
   }
@@ -288,7 +325,7 @@ async function fetchMsoMeetsApi(msoId: string): Promise<FetchMeetsResult> {
     return { error: 'No meets found. Double check the Athlete ID.' };
   }
 
-  const flags = await importedFlags(
+  const savedIds = await importedMeetIds(
     ctx.supabase,
     ctx.gymnastId,
     history.map((m) => ({ meetId: m.meetId, name: m.meetName, dateHint: m.monthYear })),
@@ -303,7 +340,8 @@ async function fetchMsoMeetsApi(msoId: string): Promise<FetchMeetsResult> {
     level: m.level ?? '',
     division: m.division,
     detailsUrl: `https://www.meetscoresonline.com/results/${m.meetId}`,
-    isImported: flags[i],
+    isImported: savedIds[i] !== null,
+    savedId: savedIds[i] ?? undefined,
   }));
 
   return { success: true, meets };
@@ -356,10 +394,11 @@ async function importMsoMeetApi(meet: MsoMeetSummary): Promise<ImportResult> {
   if (result.scores.length === 0) {
     return {
       success: true,
+      savedId: inserted.competitionId,
       warning: 'Meet created, but no scores were recorded for it yet.',
     };
   }
-  return { success: true };
+  return { success: true, savedId: inserted.competitionId };
 }
 
 /**
@@ -390,4 +429,118 @@ export async function importMsoMeet(meet: MsoMeetSummary): Promise<ImportResult>
   } catch {
     return { error: 'Failed to import meet from MSO. Please try again.' };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Re-import: compare a saved meet with MSO, then apply what the parent chose.
+// ---------------------------------------------------------------------------
+
+type ReimportContext = NonNullable<Awaited<ReturnType<typeof activeGymnastContext>>>;
+
+/** What MSO says now. Reads from MSO on the server, never from the request. */
+async function loadMsoMeet(
+  ctx: ReimportContext,
+  meet: MsoMeetSummary,
+): Promise<MsoMeetData | { error: string }> {
+  if (meet.meetId) {
+    if (!isMsoMeetId(meet.meetId)) return { error: 'Missing meet id' };
+    const athleteId = meet.athleteMsoId || ctx.msoId;
+    if (!athleteId) return { error: 'This gymnast has no MSO Athlete ID set' };
+    const rows = await msoQuery('msoMeet', 'lookup_scores2', {
+      LookupIndex: 1,
+      p_meetid: meet.meetId,
+    });
+    const result = parseMeetResult(rows, athleteId);
+    if (!result) return { error: 'Gymnast not found in this meet' };
+    return {
+      name: result.meetName || meet.name,
+      level: result.level,
+      division: result.division,
+      startDate: result.date,
+      endDate: result.date,
+      allAroundPlace: result.allAroundPlace,
+      scores: result.scores,
+    };
+  }
+  const detailsUrl = msoResultsUrl(meet.detailsUrl);
+  if (!detailsUrl) return { error: 'Invalid meet link' };
+  return scrapeMeetDetails(detailsUrl, meet);
+}
+
+/** The parent's saved meet, if it's theirs and linked to this MSO meet. */
+async function loadLinkedCompetition(
+  ctx: ReimportContext,
+  savedId: string,
+  meet: MsoMeetSummary,
+): Promise<SavedCompetition | null> {
+  const { data } = await ctx.supabase
+    .from('gym_competitions')
+    .select(
+      'name, level, division, start_date, end_date, all_around_place, mso_meet_id, scores:gym_scores(apparatus, value, place)',
+    )
+    .eq('id', savedId)
+    .eq('athlete_id', ctx.gymnastId)
+    .eq('user_id', ctx.user.id)
+    .maybeSingle();
+
+  const meetId = meet.meetId ?? msoMeetIdFromUrl(meet.detailsUrl);
+  if (!data || !meetId || data.mso_meet_id !== meetId) return null;
+  return data as SavedCompetition;
+}
+
+type ReimportPreview =
+  | { error: string; changes?: undefined }
+  | { changes: MeetChange[]; error?: undefined };
+
+export async function previewMsoReimport(
+  savedId: string,
+  meet: MsoMeetSummary,
+): Promise<ReimportPreview> {
+  const ctx = await activeGymnastContext();
+  if (!ctx) return { error: 'Authentication required' };
+
+  try {
+    const saved = await loadLinkedCompetition(ctx, savedId, meet);
+    if (!saved) return { error: 'This meet is not linked to MSO. Sync and try again.' };
+    const mso = await loadMsoMeet(ctx, meet);
+    if ('error' in mso) return { error: mso.error };
+    return { changes: diffMeet(saved, mso) };
+  } catch {
+    return { error: 'Failed to read this meet from MSO. Please try again.' };
+  }
+}
+
+export async function applyMsoReimport(
+  savedId: string,
+  meet: MsoMeetSummary,
+  chosenKeys: string[],
+): Promise<ImportResult> {
+  const ctx = await activeGymnastContext();
+  if (!ctx) return { error: 'Authentication required' };
+  if (!Array.isArray(chosenKeys)) return { error: 'Nothing was chosen' };
+
+  try {
+    const saved = await loadLinkedCompetition(ctx, savedId, meet);
+    if (!saved) return { error: 'This meet is not linked to MSO. Sync and try again.' };
+    const mso = await loadMsoMeet(ctx, meet);
+    if ('error' in mso) return { error: mso.error };
+
+    const update = buildMeetUpdate(saved, mso, chosenKeys);
+    if (Object.keys(update.fields).length === 0 && update.scores.length === 0) {
+      return { error: 'Nothing to update. Sync and try again.' };
+    }
+
+    const { error } = await ctx.supabase.rpc('update_competition_from_mso', {
+      p_id: savedId,
+      p_fields: update.fields,
+      p_scores: update.scores,
+    });
+    if (error) return { error: 'Failed to update this meet.' };
+  } catch {
+    return { error: 'Failed to read this meet from MSO. Please try again.' };
+  }
+
+  revalidatePath('/gymnastics/dashboard');
+  revalidatePath('/gymnastics/insights');
+  return { success: true };
 }
