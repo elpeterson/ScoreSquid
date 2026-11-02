@@ -1,9 +1,10 @@
 -- The on-request Between Ends crawler (SQ-004). See docs/archery/sq-004/README.md.
 --
 -- be_* tables are a deliberate exception to "RLS scoped to auth.uid()": they have no
--- owner, because one tournament is shared by every archer in it. They hold other
--- people's names and numbers, many of them minors', so app users can't read them. Only
--- the crawler can, and a parent sees a copy of their own search's matches.
+-- owner, because one tournament is shared by every archer in it. They hold the names
+-- and numbers of archers of all ages. Between Ends already publishes these, tournament
+-- by tournament; app users still can't browse them across tournaments here. Only the
+-- crawler reads them, and a parent sees a copy of their own search's matches.
 --
 -- be_crawler can't log in until its password is set by hand, never in this public repo:
 --   alter role be_crawler login password '...';
@@ -48,7 +49,7 @@ create table public.be_entries (
 );
 
 create index be_entries_alt_norm_idx on public.be_entries (alt_norm) where alt_norm is not null;
--- Entries with no number are matched by name, and only ever offered as possible matches.
+-- Archers with no number are matched by name, and only ever offered as possible matches.
 create index be_entries_blank_name_idx on public.be_entries (lower(last_name), lower(first_name))
   where alt_norm is null;
 
@@ -120,7 +121,7 @@ create policy "Users read own search matches" on public.arch_be_search_matches
   ));
 
 -- The crawler's whole reach: nothing else in public, and nothing in auth. Delete on
--- entries is for an organiser removing one between reads.
+-- entries is for an organiser removing an archer between reads.
 grant usage on schema public to be_crawler;
 grant select, insert, update on public.be_tournaments, public.be_events to be_crawler;
 grant select, insert, update, delete on public.be_entries to be_crawler;

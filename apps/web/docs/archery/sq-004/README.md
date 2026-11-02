@@ -4,7 +4,7 @@ Measured 2026-11-02. Only totals are recorded here: no names or membership numbe
 
 ## Decisions
 1. **It runs on Vercel Workflow, not GitHub Actions.** The preview test below passed.
-2. **It keeps what it reads, narrowly,** in private `be_*` tables: entries for ranking events, and arrows only for matched entries. App users can't read those tables. A parent sees a copy of their own search's matches.
+2. **It keeps what it reads, narrowly,** in private `be_*` tables: every archer listed in a ranking event, which spares later searches from re-reading it, and arrows only for matched archers. The data is already public on Between Ends, tournament by tournament; app users still can't read those tables. A parent sees a copy of their own search's matches.
 3. **It reads a tournament's scores only when the number or a possible name match appears** in that event.
 4. **One search reads at a time,** at one request every 1.1 s, with progress saved in Postgres after each batch.
 

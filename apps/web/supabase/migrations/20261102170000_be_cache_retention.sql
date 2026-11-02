@@ -1,6 +1,6 @@
--- Deletes crawler cache rows not read for 12 months (SQ-004). They hold other people's
--- names and numbers, so they shouldn't wait for a search to clear them. This job only
--- deletes local rows: it never reads Between Ends. Parents' own matches aren't touched.
+-- Deletes crawler cache rows not read for 12 months (SQ-004). They hold archers' names
+-- and numbers, so they shouldn't wait for a search to clear them. This job only deletes
+-- local rows: it never reads Between Ends. Parents' own matches aren't touched.
 create function public.purge_be_cache()
 returns void
 language sql
