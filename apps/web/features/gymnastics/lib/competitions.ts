@@ -8,7 +8,7 @@ export type ScoreInsert = {
 };
 
 type InsertResult =
-  | { error: 'competition' | 'scores'; competitionId?: undefined }
+  | { error: 'competition' | 'scores' | 'duplicate'; competitionId?: undefined }
   | { error?: undefined; competitionId: string };
 
 /**
@@ -27,6 +27,8 @@ export async function insertCompetitionWithScores(
     .select('id')
     .single();
 
+  // Unique violation: this gymnast already has this MSO meet.
+  if (compError?.code === '23505') return { error: 'duplicate' };
   if (compError || !comp) return { error: 'competition' };
 
   if (scores.length > 0) {

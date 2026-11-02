@@ -5,7 +5,7 @@ import { insertCompetitionWithScores } from '../competitions';
 type Call = { table: string; op: string; payload?: unknown; id?: unknown };
 
 /** Minimal stand-in for the query builder chains the helper uses. */
-function fakeSupabase(opts: { compError?: boolean; scoresError?: boolean }) {
+function fakeSupabase(opts: { compError?: boolean; compCode?: string; scoresError?: boolean }) {
   const calls: Call[] = [];
   const client = {
     from(table: string) {
@@ -17,7 +17,7 @@ function fakeSupabase(opts: { compError?: boolean; scoresError?: boolean }) {
               select: () => ({
                 single: async () =>
                   opts.compError
-                    ? { data: null, error: { message: 'boom' } }
+                    ? { data: null, error: { message: 'boom', code: opts.compCode } }
                     : { data: { id: 'comp-1' }, error: null },
               }),
             };
@@ -60,6 +60,14 @@ describe('insertCompetitionWithScores', () => {
 
     expect(result).toEqual({ error: 'scores' });
     expect(calls.at(-1)).toEqual({ table: 'gym_competitions', op: 'delete', id: 'comp-1' });
+  });
+
+  it('reports a duplicate when the database refuses a repeated MSO meet', async () => {
+    const { client, calls } = fakeSupabase({ compError: true, compCode: '23505' });
+    const result = await insertCompetitionWithScores(client, comp, scores);
+
+    expect(result).toEqual({ error: 'duplicate' });
+    expect(calls).toHaveLength(1);
   });
 
   it('stops without touching scores when the competition insert fails', async () => {

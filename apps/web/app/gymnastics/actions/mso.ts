@@ -7,6 +7,13 @@ import { ensureActiveGymnast } from './gymnast';
 import { parseScoreRow, parseMeetDates, msoResultsUrl } from '@/features/gymnastics/lib/mso-parser';
 import { insertCompetitionWithScores } from '@/features/gymnastics/lib/competitions';
 import {
+  isMsoMeetId,
+  matchImportedMeets,
+  msoMeetIdFromUrl,
+  type MsoMeetRef,
+  type SavedMeet,
+} from '@/features/gymnastics/lib/meet-match';
+import {
   msoQuery,
   parseGymnastMeets,
   parseMeetResult,
@@ -36,6 +43,45 @@ type FetchMeetsResult =
 type ImportResult =
   | { error: string; success?: undefined; warning?: undefined }
   | { success: true; warning?: string; error?: undefined };
+
+const ALREADY_IMPORTED = 'This meet is already imported.';
+
+/**
+ * Whether each meet is already imported for this gymnast. An older import with
+ * no MSO ID gets one here, so it stays recognised if it's renamed later.
+ */
+async function importedFlags(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  athleteId: string,
+  meets: MsoMeetRef[],
+): Promise<boolean[]> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return meets.map(() => false);
+
+  const { data } = await supabase
+    .from('gym_competitions')
+    .select('id, name, start_date, mso_meet_id')
+    .eq('athlete_id', athleteId)
+    .eq('user_id', user.id);
+
+  const matches = matchImportedMeets(meets, (data ?? []) as SavedMeet[]);
+
+  await Promise.all(
+    matches.map(async ({ saved, linkMeetId }) => {
+      if (!saved || !isMsoMeetId(linkMeetId)) return;
+      await supabase
+        .from('gym_competitions')
+        .update({ mso_meet_id: linkMeetId })
+        .eq('id', saved.id)
+        .eq('user_id', user.id)
+        .is('mso_meet_id', null);
+    }),
+  );
+
+  return matches.map((m) => m.saved !== null);
+}
 
 async function fetchMsoMeetsScrape(msoId: string): Promise<FetchMeetsResult> {
   const supabase = await createClient();
@@ -98,17 +144,19 @@ async function fetchMsoMeetsScrape(msoId: string): Promise<FetchMeetsResult> {
       return { error: 'No meets found. Double check the Athlete ID.' };
     }
 
-    const { data: existing } = await supabase
-      .from('gym_competitions')
-      .select('name')
-      .eq('athlete_id', activeGymnastId);
+    if (!activeGymnastId) return { error: 'Authentication required' };
 
-    const existingNames = new Set(existing?.map((e) => e.name));
+    const flags = await importedFlags(
+      supabase,
+      activeGymnastId,
+      meets.map((m) => ({
+        meetId: msoMeetIdFromUrl(m.detailsUrl),
+        name: m.name,
+        dateHint: m.dateStr,
+      })),
+    );
 
-    const processedMeets = meets.map((m) => ({
-      ...m,
-      isImported: existingNames.has(m.name),
-    }));
+    const processedMeets = meets.map((m, i) => ({ ...m, isImported: flags[i] }));
 
     return { success: true, meets: processedMeets };
   } catch {
@@ -170,6 +218,7 @@ async function importMsoMeetScrape(meet: MsoMeetSummary): Promise<ImportResult> 
       {
         user_id: user.id,
         athlete_id: gymnastId,
+        mso_meet_id: msoMeetIdFromUrl(detailsUrl),
         name: realName,
         level: meet.level,
         start_date: startDate,
@@ -179,6 +228,7 @@ async function importMsoMeetScrape(meet: MsoMeetSummary): Promise<ImportResult> 
       scoresToInsert,
     );
 
+    if (inserted.error === 'duplicate') return { error: ALREADY_IMPORTED };
     if (inserted.error === 'competition') return { error: 'Failed to create meet.' };
     if (inserted.error === 'scores') return { error: 'Scores failed to save; the meet was not imported.' };
 
@@ -238,13 +288,13 @@ async function fetchMsoMeetsApi(msoId: string): Promise<FetchMeetsResult> {
     return { error: 'No meets found. Double check the Athlete ID.' };
   }
 
-  const { data: existing } = await ctx.supabase
-    .from('gym_competitions')
-    .select('name')
-    .eq('athlete_id', ctx.gymnastId);
-  const existingNames = new Set(existing?.map((e) => e.name));
+  const flags = await importedFlags(
+    ctx.supabase,
+    ctx.gymnastId,
+    history.map((m) => ({ meetId: m.meetId, name: m.meetName, dateHint: m.monthYear })),
+  );
 
-  const meets: MsoMeetSummary[] = history.map((m) => ({
+  const meets: MsoMeetSummary[] = history.map((m, i) => ({
     id: m.meetId,
     meetId: m.meetId,
     athleteMsoId: msoId,
@@ -253,7 +303,7 @@ async function fetchMsoMeetsApi(msoId: string): Promise<FetchMeetsResult> {
     level: m.level ?? '',
     division: m.division,
     detailsUrl: `https://www.meetscoresonline.com/results/${m.meetId}`,
-    isImported: existingNames.has(m.meetName),
+    isImported: flags[i],
   }));
 
   return { success: true, meets };
@@ -262,7 +312,7 @@ async function fetchMsoMeetsApi(msoId: string): Promise<FetchMeetsResult> {
 async function importMsoMeetApi(meet: MsoMeetSummary): Promise<ImportResult> {
   const ctx = await activeGymnastContext();
   if (!ctx) return { error: 'Authentication required' };
-  if (!meet.meetId) return { error: 'Missing meet id' };
+  if (!isMsoMeetId(meet.meetId)) return { error: 'Missing meet id' };
 
   // Use the id that fetched the meet list; fall back to the stored one.
   const athleteId = meet.athleteMsoId || ctx.msoId;
@@ -281,6 +331,7 @@ async function importMsoMeetApi(meet: MsoMeetSummary): Promise<ImportResult> {
     {
       user_id: ctx.user.id,
       athlete_id: ctx.gymnastId,
+      mso_meet_id: meet.meetId,
       name: result.meetName || meet.name,
       level: result.level,
       division: result.division,
@@ -295,6 +346,7 @@ async function importMsoMeetApi(meet: MsoMeetSummary): Promise<ImportResult> {
     })),
   );
 
+  if (inserted.error === 'duplicate') return { error: ALREADY_IMPORTED };
   if (inserted.error === 'competition') return { error: 'Failed to create meet.' };
   if (inserted.error === 'scores') {
     return { error: 'Scores failed to save; the meet was not imported.' };
