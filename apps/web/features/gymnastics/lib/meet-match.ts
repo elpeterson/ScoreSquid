@@ -21,8 +21,12 @@ export const isMsoMeetId = (value: unknown): value is string =>
 
 /** The meet ID in an MSO results link: `/results/12345` gives `12345`. */
 export function msoMeetIdFromUrl(url: string | null | undefined): string | null {
-  const match = /\/results\/(\d+)(?:[/?#]|$)/.exec(url ?? '');
-  return match ? match[1] : null;
+  try {
+    const { pathname } = new URL(url ?? '', 'https://www.meetscoresonline.com');
+    return /^\/results\/(\d+)\/?$/.exec(pathname)?.[1] ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /** A count of months, so two dates can be compared, or null if there's no usable date. */

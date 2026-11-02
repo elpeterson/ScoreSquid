@@ -32,6 +32,11 @@ describe('msoMeetIdFromUrl', () => {
     expect(msoMeetIdFromUrl('/Athlete.MyScores/1')).toBeNull();
     expect(msoMeetIdFromUrl(null)).toBeNull();
   });
+
+  it('only reads the path, not the query string', () => {
+    expect(msoMeetIdFromUrl('https://www.meetscoresonline.com/results/abc?x=/results/5')).toBeNull();
+    expect(msoMeetIdFromUrl('/results/12/extra')).toBeNull();
+  });
 });
 
 describe('isMsoMeetId', () => {
