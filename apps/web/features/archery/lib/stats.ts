@@ -78,7 +78,10 @@ export function computeEventStats(event: EventRow): EventStats {
   >;
   for (const a of arrows) distribution[a] = (distribution[a] ?? 0) + 1;
 
-  const total = endScores.reduce((s, v) => s + v, 0);
+  // A result imported with totals but no arrows has no ends to add up.
+  const total = ends.length
+    ? endScores.reduce((s, v) => s + v, 0)
+    : rounds.reduce((s, r) => s + r.total, 0);
   const arrowCount = arrows.length;
   const maxScore = arrowCount * 10;
   const endAverage = endScores.length ? total / endScores.length : 0;

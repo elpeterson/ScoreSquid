@@ -32,13 +32,3 @@ export function progressPercent(done: number, total: number): number | null {
   if (total <= 0) return null;
   return Math.min(100, Math.floor((done / total) * 100));
 }
-
-/** Number matches are this archer's; name matches may be someone else, so they're apart. */
-export function splitMatches<T extends { match_kind: 'number' | 'name' }>(
-  matches: T[],
-): { confirmed: T[]; possible: T[] } {
-  return {
-    confirmed: matches.filter((m) => m.match_kind === 'number'),
-    possible: matches.filter((m) => m.match_kind === 'name'),
-  };
-}

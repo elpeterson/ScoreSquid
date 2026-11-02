@@ -12,6 +12,7 @@ begin;
 \i /migration.sql
 \i /retention.sql
 \i /kick.sql
+\i /import.sql
 
 create function pg_temp.t(label text, role_name text, uid uuid, q text, want text) returns void language plpgsql as $$
 declare n bigint; got text; begin
@@ -135,6 +136,35 @@ update public.arch_be_searches set kicked_at = now() - interval '1 hour' where i
 select pg_temp.t('allowed again later', 'authenticated', :a, :old, 'rows:1');
 update public.arch_be_searches set kicked_at = null, created_at = now() where id = '00000000-0000-0000-0000-000000000002';
 select pg_temp.t('a recent search can''t be kicked', 'authenticated', :a, :old, 'rows:0');
+-- Import: real scorecard tables only, so on the Supabase image.
+\if :crawler
+select pg_temp.t('crawler stores the layout', 'be_crawler', null, $q$insert into public.arch_be_search_matches (search_id, event_id, aid, match_kind, tournament_name, tournament_date, tournament_id, event_type, rounds, ends_per_round, arrows_per_end, scoring_rule, round_totals, division_code, venue, session, target, tournament_end_date) values ('00000000-0000-0000-0000-000000000001', 1, 9, 'number', 'x', '2026-01-01', 1, 'RankingEvent', 1, 2, 3, 0, '57', 'RU13W', 'v', 's', '7B', '2026-01-02')$q$, 'rows:1');
+select pg_temp.t('crawler no scorecards', 'be_crawler', null, 'select 1 from public.arch_events', 'denied:42501');
+\else
+\set card '''select public.import_scorecard(''''{"event":{"athlete_id":"00000000-0000-0000-0000-0000000000aa","name":"Made Up Open","environment":"indoor","arrows_per_end":3,"bonus_labels":[],"source":"betweenends_api","bow_style":"recurve","distance_m":18,"face_cm":40,"be_tournament_id":1,"be_event_id":7,"be_aid":1,"be_arrows":"XTT"},"rounds":[{"round_number":1,"total":30,"bonus":[],"ends":[{"end_number":1,"arrows":["X","10","10"]}]}]}''''::jsonb)'''
+select pg_temp.t('import a result', 'authenticated', :a, :card, 'rows:1');
+select pg_temp.t('rounds and ends saved', 'authenticated', :a, 'select 1 from public.arch_ends e join public.arch_rounds r on r.id=e.round_id join public.arch_events v on v.id=r.event_id where v.be_event_id=7', 'rows:1');
+select pg_temp.t('same result again is refused', 'authenticated', :a, :card, 'denied:23505');
+select pg_temp.t('another''s archer is refused', 'authenticated', :b, :card, 'denied:42501');
+select pg_temp.t('other user can''t see it', 'authenticated', :b, 'select 1 from public.arch_events where be_event_id=7', 'rows:0');
+select pg_temp.t('bad arrow leaves no partial card', 'authenticated', :a, $q$select public.import_scorecard('{"event":{"athlete_id":"00000000-0000-0000-0000-0000000000aa","name":"Bad","environment":"indoor","arrows_per_end":3,"bonus_labels":[],"source":"betweenends_api","be_event_id":8,"be_aid":1},"rounds":[{"round_number":1,"total":1,"bonus":[],"ends":[{"end_number":1,"arrows":["a"]}]}]}'::jsonb)$q$, 'denied:23514');
+select pg_temp.t('no partial card', 'authenticated', :a, 'select 1 from public.arch_events where be_event_id=8', 'rows:0');
+select pg_temp.t('a PDF import still works', 'authenticated', :a, $q$select public.import_scorecard('{"event":{"athlete_id":"00000000-0000-0000-0000-0000000000aa","name":"Pdf","environment":"indoor","arrows_per_end":3,"bonus_labels":[],"source_hash":"abc"},"rounds":[{"round_number":1,"total":10,"bonus":[],"ends":[{"end_number":1,"arrows":["X"]}]}]}'::jsonb)$q$, 'rows:1');
+select pg_temp.t('ids must come together', 'authenticated', :a, $q$select public.import_scorecard('{"event":{"athlete_id":"00000000-0000-0000-0000-0000000000aa","name":"Half","environment":"indoor","arrows_per_end":3,"bonus_labels":[],"be_event_id":9},"rounds":[{"round_number":1,"total":10,"bonus":[],"ends":[{"end_number":1,"arrows":["X"]}]}]}'::jsonb)$q$, 'denied:23514');
+select id as api_card from public.arch_events where be_event_id = 7 \gset
+select id as pdf_card from public.arch_events where name = 'Pdf' \gset
+\set rounds '[{"round_number":1,"total":29,"bonus":[],"ends":[{"end_number":1,"arrows":["10","10","9"]}]}]'
+select pg_temp.t('anon can''t replace', 'anon', null, format('select public.replace_be_scorecard(%L, %L::jsonb, ''TT9'', 3::smallint)', :'api_card', :'rounds'), 'denied:42501');
+select pg_temp.t('other user can''t replace', 'authenticated', :b, format('select public.replace_be_scorecard(%L, %L::jsonb, ''TT9'', 3::smallint)', :'api_card', :'rounds'), 'denied:P0002');
+select pg_temp.t('can''t replace a PDF', 'authenticated', :a, format('select public.replace_be_scorecard(%L, %L::jsonb, ''TT9'', 3::smallint)', :'pdf_card', :'rounds'), 'denied:P0002');
+select pg_temp.t('bad correction changes nothing', 'authenticated', :a, format('select public.replace_be_scorecard(%L, %L::jsonb, ''TT9'', 3::smallint)', :'api_card', '[{"round_number":1,"total":1,"bonus":[],"ends":[{"end_number":1,"arrows":["a"]}]}]'), 'denied:23514');
+select pg_temp.t('...still the old total', 'authenticated', :a, format('select 1 from public.arch_rounds where event_id=%L and total=30', :'api_card'), 'rows:1');
+update public.arch_events set bow_style = 'barebow', notes = 'mine' where id = :'api_card';
+select pg_temp.t('accept a correction', 'authenticated', :a, format('select public.replace_be_scorecard(%L, %L::jsonb, ''TT9'', 3::smallint)', :'api_card', :'rounds'), 'rows:1');
+select pg_temp.t('new arrows, one round', 'authenticated', :a, format('select 1 from public.arch_rounds where event_id=%L and total=29', :'api_card'), 'rows:1');
+select pg_temp.t('setup and notes kept', 'authenticated', :a, format('select 1 from public.arch_events where id=%L and bow_style=''barebow'' and notes=''mine'' and distance_m=18 and be_arrows=''TT9''', :'api_card'), 'rows:1');
+\endif
+
 -- Retention.
 select pg_temp.t('anon can''t purge', 'anon', null, 'select public.purge_be_cache()', 'denied:42501');
 select pg_temp.t('parent can''t purge', 'authenticated', :a, 'select public.purge_be_cache()', 'denied:42501');

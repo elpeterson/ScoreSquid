@@ -58,6 +58,7 @@ export default async function ImportPage() {
         archer={archer!}
         initial={latestSearch.view}
         lastFinishedTo={latestSearch.lastFinishedTo}
+        setupDefaults={setupDefaults}
       />
       <ScorecardImport
         archer={archer!}

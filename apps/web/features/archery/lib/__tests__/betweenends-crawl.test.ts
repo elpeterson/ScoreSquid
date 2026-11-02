@@ -136,6 +136,9 @@ describe('runBatch', () => {
     expect(state.matches[0]).toMatchObject({
       matchKind: 'number', total: 60, arrows: 'TTTTTT', division: 'Recurve U13 Women', tournamentName: 'Made Up Open',
     });
+    expect(state.matches[0]).toMatchObject({
+      tournamentId: 10, eventType: 'RankingEvent', rounds: 1, endsPerRound: 2, arrowsPerEnd: 3, scoringRule: 0, divisionCode: 'RU13W',
+    });
     expect(state.finished).toBe('finished');
   });
 

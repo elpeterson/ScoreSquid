@@ -4,7 +4,6 @@ import {
   defaultSearchFrom,
   isActive,
   progressPercent,
-  splitMatches,
 } from '@/features/archery/lib/betweenends/search-view';
 
 describe('defaultSearchFrom', () => {
@@ -48,16 +47,5 @@ describe('isActive', () => {
     expect(isActive('finished')).toBe(false);
     expect(isActive('failed')).toBe(false);
     expect(isActive('cancelled')).toBe(false);
-  });
-});
-
-describe('splitMatches', () => {
-  it('keeps name matches apart from number matches', () => {
-    const { confirmed, possible } = splitMatches([
-      { match_kind: 'number' as const, aid: 1 },
-      { match_kind: 'name' as const, aid: 2 },
-    ]);
-    expect(confirmed.map((m) => m.aid)).toEqual([1]);
-    expect(possible.map((m) => m.aid)).toEqual([2]);
   });
 });

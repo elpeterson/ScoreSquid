@@ -117,7 +117,13 @@ export default async function EventPage({
               <CardTitle className="text-base">Round {round.round_number}</CardTitle>
             </CardHeader>
             <CardContent>
-              <ScorecardGrid round={round} bonusLabels={event.bonus_labels} />
+              {round.ends.length > 0 ? (
+                <ScorecardGrid round={round} bonusLabels={event.bonus_labels} />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Total {round.total}. Between Ends has no arrows for this round.
+                </p>
+              )}
             </CardContent>
           </Card>
         ))}

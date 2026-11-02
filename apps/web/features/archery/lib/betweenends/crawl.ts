@@ -4,6 +4,7 @@
 // database. Logs carry counts only, never an archer's name or number.
 
 import type { BeClient } from './client';
+import { parseDateRange } from '../scorecard/dates';
 import { normaliseAlt, rankingEntries } from './entries';
 import type { BeEventType, BeRankingEvent, BeTournament } from './types';
 
@@ -58,6 +59,19 @@ export type MatchRow = {
   division: string | null;
   total: number | null;
   arrows: string | null;
+  /** What a scorecard needs, so an import reads nothing more from Between Ends. */
+  tournamentId: number;
+  eventType: BeEventType;
+  rounds: number | null;
+  endsPerRound: number | null;
+  arrowsPerEnd: number | null;
+  scoringRule: number | null;
+  roundTotals: string | null;
+  divisionCode: string | null;
+  venue: string | null;
+  session: string | null;
+  target: string | null;
+  tournamentEndDate: string | null;
 };
 
 export type TournamentDetails = {
@@ -219,6 +233,7 @@ async function refreshTournament(
 async function saveMatches(
   deps: BatchDeps,
   search: SearchRow,
+  tournamentId: number,
   tournament: CachedTournament,
   bodies: Map<number, BeRankingEvent>,
 ): Promise<void> {
@@ -254,6 +269,18 @@ async function saveMatches(
         total: entry ? entry.decoded.total : null,
         // A name match may be someone else, so it carries no arrows until confirmed.
         arrows: matchKind === 'number' && entry?.arrows ? entry.arrows : null,
+        tournamentId,
+        eventType: event.eventType,
+        rounds: body?.rds ?? null,
+        endsPerRound: body?.epr ?? null,
+        arrowsPerEnd: body?.ape ?? null,
+        scoringRule: body?.srl ?? null,
+        roundTotals: body?.rps?.[String(m.aid)]?.rtl || null,
+        divisionCode: m.divisionCode || null,
+        venue: body?.tlc || null,
+        session: entry?.sessions[0] ?? null,
+        target: entry?.targets[0] ?? null,
+        tournamentEndDate: body?.tdt ? parseDateRange(body.tdt).end : null,
       });
     }
   }
@@ -291,7 +318,7 @@ export async function runBatch(deps: BatchDeps, previous: CrawlState): Promise<B
       if (cached && sameInstant(cached.sourceUpdatedAt, item.updatedAt)) cacheHits++;
       const checkCache = cacheHits > 0 && cacheHits % CHECK_EVERY_CACHE_HIT === 0;
       const refreshed = await refreshTournament(deps, item, cached, checkCache);
-      if (refreshed) await saveMatches(deps, search, refreshed.tournament, refreshed.bodies);
+      if (refreshed) await saveMatches(deps, search, item.id, refreshed.tournament, refreshed.bodies);
 
       done++;
       if (!(await store.saveProgress(search.id, done))) return { idle: false, state: null };

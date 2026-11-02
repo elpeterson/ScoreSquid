@@ -11,6 +11,7 @@ create policy own on public.athletes for select to authenticated using (user_id 
 grant select on public.athletes to authenticated;
 create table public.archer_profiles (athlete_id uuid primary key, membership_number text, competition_start_date date);
 alter table public.archer_profiles enable row level security;
+create table public.arch_events (id uuid primary key, athlete_id uuid, source text constraint arch_events_source_check check (source in ('betweenends', 'manual')));
 create table public.arch_rounds (id int); create table public.gym_scores (id int);
 create view public.archer_athletes as select * from public.athletes;
 -- Mirror Supabase's default: new tables are granted to the app roles, so the revokes must do the work.

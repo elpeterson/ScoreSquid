@@ -102,6 +102,7 @@ The cache held 1,989 archers across 35 events, 479 of them with no number. This 
 
 ## Known limits
 - **Queue:** one person with many accounts could keep the one-at-a-time queue full. A global cap would let them block new searches instead, so there isn't one; requests stay paced either way.
+- **Confirming a possible match:** it reads Between Ends live, at most 5 per import, from the server action. That's paced within one import but not against the crawler or other imports.
 - **TLS:** the pooler connection is encrypted but doesn't verify Supabase's certificate. Verifying it means supplying their root CA.
 - **Self-hosting:** Workflow's routes rely on Vercel's authentication, so block them at the proxy before moving anywhere else.
 
@@ -117,6 +118,7 @@ docker cp ../../../supabase/migrations/20261102160000_between_ends_crawler.sql s
 sed '/create extension/d' ../../../supabase/migrations/20261102170000_be_cache_retention.sql > /tmp/retention.sql
 docker cp /tmp/retention.sql sq004-pg:/retention.sql
 docker cp ../../../supabase/migrations/20261102180000_kick_be_search.sql sq004-pg:/kick.sql
+docker cp ../../../supabase/migrations/20261102190000_between_ends_import.sql sq004-pg:/import.sql
 docker exec -i sq004-pg psql -q -U postgres < stubs.sql
 docker exec -i sq004-pg psql -U postgres -v crawler=1 < checks.sql 2>&1 | grep -E "PASS|FAIL|ERROR"
 docker rm -f sq004-pg

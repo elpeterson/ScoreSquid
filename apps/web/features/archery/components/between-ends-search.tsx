@@ -12,11 +12,11 @@ import {
   defaultSearchFrom,
   isActive,
   progressPercent,
-  splitMatches,
-  type SearchMatch,
 } from '@/features/archery/lib/betweenends/search-view';
 import { formatDate } from '@/lib/dates';
+import type { SetupDefaults } from '@/features/archery/lib/betweenends/import-plan';
 import { ArcherDetailsFields, ArcherSaveError } from './archer-details-fields';
+import { BetweenEndsResults } from './between-ends-results';
 
 const POLL_MS = 5000;
 
@@ -31,10 +31,12 @@ export function BetweenEndsSearch({
   archer,
   initial,
   lastFinishedTo,
+  setupDefaults,
 }: {
   archer: Archer;
   initial: BeSearchView | null;
   lastFinishedTo: string | null;
+  setupDefaults: SetupDefaults;
 }) {
   const hasDetails = !!archer.membership_number && !!archer.competition_start_date;
 
@@ -46,13 +48,18 @@ export function BetweenEndsSearch({
           Search Between Ends
         </CardTitle>
         <CardDescription>
-          Find the tournaments where {archer.name}&apos;s membership number appears. Nothing is
-          added to your account by searching.
+          Find the tournaments where {archer.name}&apos;s membership number appears, then choose
+          which to import. Nothing is added to your account until you do.
         </CardDescription>
       </CardHeader>
       <CardContent>
         {hasDetails ? (
-          <SearchPanel archer={archer} initial={initial} lastFinishedTo={lastFinishedTo} />
+          <SearchPanel
+            archer={archer}
+            initial={initial}
+            lastFinishedTo={lastFinishedTo}
+            setupDefaults={setupDefaults}
+          />
         ) : (
           <DetailsForm archer={archer} />
         )}
@@ -102,10 +109,12 @@ function SearchPanel({
   archer,
   initial,
   lastFinishedTo,
+  setupDefaults,
 }: {
   archer: Archer;
   initial: BeSearchView | null;
   lastFinishedTo: string | null;
+  setupDefaults: SetupDefaults;
 }) {
   const [view, setView] = useState(initial);
   const [error, setError] = useState<string | null>(null);
@@ -124,6 +133,12 @@ function SearchPanel({
     }, POLL_MS);
     return () => clearInterval(timer);
   }, [active, searchId]);
+
+  const refresh = async () => {
+    if (!searchId) return;
+    const next = await getBeSearch(searchId).catch(() => null);
+    if (next) setView(next);
+  };
 
   const lastTo = search?.status === 'finished' ? search.to_date : lastFinishedTo;
   const from = defaultSearchFrom(archer.competition_start_date, lastTo);
@@ -180,7 +195,15 @@ function SearchPanel({
         </p>
       )}
 
-      {view && <MatchLists matches={view.matches} />}
+      {view && (
+        <BetweenEndsResults
+          athleteId={archer.id}
+          archerName={archer.name}
+          results={view.results}
+          setupDefaults={setupDefaults}
+          onChanged={refresh}
+        />
+      )}
     </div>
   );
 }
@@ -247,7 +270,7 @@ function SearchStatusLine({
     return (
       <p className="text-sm text-muted-foreground">
         {read}{' '}
-        {matches.length > 0 ? 'What it found is kept below.' : 'It had not found anything yet.'}
+        {matches.length > 0 ? 'You can still import what it found, below.' : 'It had not found anything yet.'}
       </p>
     );
   }
@@ -265,48 +288,5 @@ function SearchStatusLine({
     <p className="text-sm text-muted-foreground">
       Searched {formatDate(search.from_date)} to {formatDate(search.to_date)}.
     </p>
-  );
-}
-
-function MatchLists({ matches }: { matches: SearchMatch[] }) {
-  const { confirmed, possible } = splitMatches(matches);
-  return (
-    <>
-      {confirmed.length > 0 && (
-        <section aria-label="Tournaments found" className="space-y-2">
-          <h3 className="text-sm font-semibold">Tournaments found</h3>
-          <MatchList matches={confirmed} />
-        </section>
-      )}
-      {possible.length > 0 && (
-        <section aria-label="Possible matches" className="space-y-2">
-          <h3 className="text-sm font-semibold">Possible matches</h3>
-          <p className="text-xs text-muted-foreground">
-            The organiser left the membership number blank for these, so they only match by name
-            and may be someone else.
-          </p>
-          <MatchList matches={possible} />
-        </section>
-      )}
-    </>
-  );
-}
-
-function MatchList({ matches }: { matches: SearchMatch[] }) {
-  return (
-    <ul className="divide-y rounded-md border">
-      {matches.map((m) => (
-        <li key={`${m.event_id}-${m.aid}`} className="flex items-center justify-between gap-4 p-3 text-sm">
-          <div className="min-w-0">
-            <p className="font-medium break-words">{m.tournament_name}</p>
-            <p className="text-muted-foreground">
-              {formatDate(m.tournament_date)}
-              {m.division ? ` · ${m.division}` : ''}
-            </p>
-          </div>
-          <span className="shrink-0 font-semibold tabular-nums">{m.total ?? '—'}</span>
-        </li>
-      ))}
-    </ul>
   );
 }

@@ -18,7 +18,9 @@ export default async function InsightsPage() {
   const activeArcherId = await ensureActiveArcher();
   if (!activeArcherId) redirect('/dashboard');
 
-  const { events, error } = await fetchArcherEvents(supabase, activeArcherId);
+  const { events: allEvents, error } = await fetchArcherEvents(supabase, activeArcherId);
+  // A result imported with totals but no arrows has nothing to analyse.
+  const events = allEvents.filter((e) => e.rounds.some((r) => r.ends.length > 0));
   if (error) {
     return <div className="p-8 text-red-500">Error loading scorecards.</div>;
   }
