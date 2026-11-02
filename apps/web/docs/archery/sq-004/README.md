@@ -93,11 +93,13 @@ What this means for the build:
 The migration gives `be_crawler` only the cache and search-progress columns. The password is set by hand, never in a migration. Connect through the shared pooler as `be_crawler.<project-ref>` on port 6543, since it has IPv4 on every plan and transaction mode suits serverless, with prepared statements off. This adds a `pg` or `postgres` dependency and has **not been tried on hosted Supabase**.
 
 ## Schema and checks
-The schema is `supabase/migrations/20261102160000_between_ends_crawler.sql`. `checks.sql` tests its access rules in a rolled-back transaction: every check on plain Postgres 17 with `stubs.sql`, and those that don't need the crawler role on the local Supabase image.
+The schema is `supabase/migrations/20261102160000_between_ends_crawler.sql`, with retention in `20261102170000_be_cache_retention.sql`. `checks.sql` tests its access rules in a rolled-back transaction: every check on plain Postgres 17 with `stubs.sql`, and those that don't need the crawler role on the local Supabase image.
 
 ```bash
 docker run -d --rm --name sq004-pg -e POSTGRES_HOST_AUTH_METHOD=trust postgres:17-alpine
 docker cp ../../../supabase/migrations/20261102160000_between_ends_crawler.sql sq004-pg:/migration.sql
+sed '/create extension/d' ../../../supabase/migrations/20261102170000_be_cache_retention.sql > /tmp/retention.sql
+docker cp /tmp/retention.sql sq004-pg:/retention.sql
 docker exec -i sq004-pg psql -q -U postgres < stubs.sql
 docker exec -i sq004-pg psql -U postgres -v crawler=1 < checks.sql 2>&1 | grep -E "PASS|FAIL|ERROR"
 docker rm -f sq004-pg
@@ -105,4 +107,4 @@ docker rm -f sq004-pg
 
 **Don't run `grant <role> to current_user with set true` on the local Supabase image.** It crashed the Postgres backend (signal 11) both times it ran; the database restarted by itself. The migration doesn't use it.
 
-Before this ships: a decision on how long `be_*` rows are kept.
+`be_*` rows not read for 12 months are deleted by a daily `pg_cron` job, which never contacts Between Ends. The crawler must update `read_at` whenever it checks a tournament. The Between Ends maintainer won't be contacted for now (decided 2026-11-02), so the pacing and `User-Agent` matter all the more.

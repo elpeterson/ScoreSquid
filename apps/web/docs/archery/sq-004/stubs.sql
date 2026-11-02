@@ -15,3 +15,6 @@ create table public.arch_rounds (id int); create table public.gym_scores (id int
 create view public.archer_athletes as select * from public.athletes;
 -- Mirror Supabase's default: new tables are granted to the app roles, so the revokes must do the work.
 alter default privileges in schema public grant all on tables to anon, authenticated;
+-- Stands in for pg_cron, which plain Postgres doesn't have. The extension line is removed by the run command.
+create schema cron;
+create function cron.schedule(text, text, text) returns bigint language sql as 'select 1::bigint';

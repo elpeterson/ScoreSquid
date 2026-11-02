@@ -10,6 +10,7 @@ begin;
 \i /prereq.sql
 \endif
 \i /migration.sql
+\i /retention.sql
 
 create function pg_temp.t(label text, role_name text, uid uuid, q text, want text) returns void language plpgsql as $$
 declare n bigint; got text; begin
@@ -119,4 +120,19 @@ select pg_temp.t('can''t start searches', 'be_crawler', null, 'select public.sta
 select pg_temp.t('first running', 'be_crawler', null, $q$update public.arch_be_searches set status='running' where membership_number='444444'$q$, 'rows:1');
 select pg_temp.t('only one running', 'be_crawler', null, $q$update public.arch_be_searches set status='running' where membership_number='222222'$q$, 'denied:23505');
 \endif
+-- Retention.
+select pg_temp.t('anon can''t purge', 'anon', null, 'select public.purge_be_cache()', 'denied:42501');
+select pg_temp.t('parent can''t purge', 'authenticated', :a, 'select public.purge_be_cache()', 'denied:42501');
+\if :crawler
+select pg_temp.t('crawler can''t purge', 'be_crawler', null, 'select public.purge_be_cache()', 'denied:42501');
+\endif
+insert into public.be_tournaments (id, name, start_date, source_updated_at, read_at) values (2, 'Made Up Old', '2024-01-01', now(), now() - interval '13 months');
+insert into public.be_events (id, tournament_id, event_type) values (2, 2, 'RankingEvent');
+insert into public.be_entries (event_id, aid) values (2, 1);
+select public.purge_be_cache();
+do $$ begin
+  raise notice '% old tournament and its rows purged', case when not exists (select 1 from public.be_tournaments where id = 2) and not exists (select 1 from public.be_entries where event_id = 2) then 'PASS' else 'FAIL' end;
+  raise notice '% recent tournament kept', case when exists (select 1 from public.be_tournaments where id = 1) then 'PASS' else 'FAIL' end;
+  raise notice '% parent''s matches kept', case when exists (select 1 from public.arch_be_search_matches where event_id = 1) then 'PASS' else 'FAIL' end;
+end $$;
 rollback;

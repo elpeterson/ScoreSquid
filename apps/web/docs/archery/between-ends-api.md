@@ -102,7 +102,7 @@ Not yet sampled: `CombinedRankingEvent`, `SpecialEvent`, outdoor ranking rounds 
 ### 1. A search has to read tournaments
 There's no "archer → results" lookup, so a search a parent starts reads each tournament in its date range. Nothing is scheduled and there is no full backfill. [The SQ-004 spike](sq-004/README.md) has the runner, what is kept, and current costs; its private `be_*` tables replace the public-read plan once described here.
 
-**Be a good neighbour:** Between Ends is a one-person, Ko-fi-supported Heroku app. Keep to the ceiling in the spike, set a descriptive `User-Agent` with a contact, and consider asking the maintainer before search ships.
+**Be a good neighbour:** Between Ends is a one-person, Ko-fi-supported Heroku app. Keep to the ceiling in the spike and set a descriptive `User-Agent` with a contact. We aren't contacting the maintainer for now (decided 2026-11-02).
 
 ### 2. Identity: what is an "ArcherID"
 - Primary: `alt_norm` (the USA Archery membership number) = `alt` trimmed, digits only (`"123456C"` → `123456`?). Whether the suffix is meaningful (club? a typo?) is an open question, so keep `alt_raw` too.
@@ -130,8 +130,7 @@ Between Ends already publishes names and scores per tournament. A single page th
 1. What do `alt` suffixes like `C` mean, and is the same person ever listed under two numbers?
 2. Do `CombinedRankingEvent` / `SpecialEvent` carry `alt` and arrows? (Sample before the crawler handles them.)
 3. Does `tournaments.updated_at` change on every score edit, or only on setup changes? This decides whether it's a reliable change feed.
-4. Should we contact the Between Ends maintainer before search ships? It's a courtesy, and they might offer a bulk export.
-5. MVP privacy guardrails above: agree or adjust.
+4. MVP privacy guardrails above: agree or adjust.
 
 ## Next steps
 Tracked as SQ-004, SQ-019, SQ-020 and SQ-021. The public `/archer` pages described above were removed on 2026-11-02, so the sections on them and on public-page privacy are history, not plans.
