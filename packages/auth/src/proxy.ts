@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { authCookieOptions } from './cookie-options';
 
 const AUTH_PREFIXES = ['/login', '/auth'];
 
@@ -9,6 +10,8 @@ const matches = (pathname: string, prefixes: readonly string[]) =>
 export type AuthProxyOptions = {
   /** Pages served without a session or a Supabase call. */
   publicPrefixes?: readonly string[];
+  /** Internal route folder for this proxy's pages; the visitor's URL doesn't change. */
+  rewritePrefix?: string;
 };
 
 /**
@@ -16,10 +19,18 @@ export type AuthProxyOptions = {
  * visitors to /login and signed-in visitors away from it. The `matcher` stays
  * in each app's proxy.ts because Next reads it statically.
  */
-export function createAuthProxy({ publicPrefixes = [] }: AuthProxyOptions = {}) {
+export function createAuthProxy({ publicPrefixes = [], rewritePrefix = '' }: AuthProxyOptions = {}) {
   return async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
-    if (matches(pathname, publicPrefixes)) return NextResponse.next();
+    const target = () => {
+      const url = request.nextUrl.clone();
+      url.pathname = pathname === '/' && rewritePrefix ? rewritePrefix : `${rewritePrefix}${pathname}`;
+      return url;
+    };
+
+    if (matches(pathname, publicPrefixes)) {
+      return rewritePrefix ? NextResponse.rewrite(target()) : NextResponse.next();
+    }
 
     let response = NextResponse.next({ request });
 
@@ -27,6 +38,7 @@ export function createAuthProxy({ publicPrefixes = [] }: AuthProxyOptions = {}) 
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
       {
+        cookieOptions: authCookieOptions(),
         cookies: {
           getAll() {
             return request.cookies.getAll();
@@ -59,6 +71,10 @@ export function createAuthProxy({ publicPrefixes = [] }: AuthProxyOptions = {}) 
     if (!user && !matches(pathname, AUTH_PREFIXES)) return redirectTo('/login');
     if (user && matches(pathname, ['/login'])) return redirectTo('/dashboard');
 
-    return response;
+    if (!rewritePrefix) return response;
+
+    const rewrite = NextResponse.rewrite(target(), { request });
+    response.cookies.getAll().forEach((cookie) => rewrite.cookies.set(cookie));
+    return rewrite;
   };
 }

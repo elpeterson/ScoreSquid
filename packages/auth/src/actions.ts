@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from './server';
-import { parseSettingUpdate, type BaseSettings } from './settings';
+import { parseSettingUpdate } from './settings';
 
 export type ActionResult = { error?: string; success?: boolean };
 
@@ -13,9 +13,6 @@ const field = (formData: FormData, name: string) => {
   const value = formData.get(name);
   return typeof value === 'string' ? value : '';
 };
-
-const emailLinkOrigin = (fallbackOrigin: string) =>
-  process.env.NEXT_PUBLIC_BASE_URL || fallbackOrigin;
 
 export async function signIn(formData: FormData): Promise<ActionResult> {
   const supabase = await createClient();
@@ -31,14 +28,14 @@ export async function signIn(formData: FormData): Promise<ActionResult> {
 
 export async function signUp(
   formData: FormData,
-  fallbackOrigin: string,
+  origin: string,
 ): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({
     email: field(formData, 'email'),
     password: field(formData, 'password'),
     options: {
-      emailRedirectTo: `${emailLinkOrigin(fallbackOrigin)}/auth/callback?next=/account`,
+      emailRedirectTo: `${origin}/auth/callback?next=/account`,
     },
   });
   return error ? { error: error.message } : { success: true };
@@ -46,13 +43,13 @@ export async function signUp(
 
 export async function requestPasswordReset(
   formData: FormData,
-  fallbackOrigin: string,
+  origin: string,
 ): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(
     field(formData, 'email'),
     {
-      redirectTo: `${emailLinkOrigin(fallbackOrigin)}/auth/callback?next=/account&type=recovery`,
+      redirectTo: `${origin}/auth/callback?next=/account&type=recovery`,
     },
   );
   return error ? { error: error.message } : { success: true };
@@ -76,8 +73,11 @@ export async function changePassword(formData: FormData): Promise<ActionResult> 
 }
 
 /** The signed-in user's settings, or `defaults`. `defaults` names the columns to read. */
-export async function readUserSettings<T extends BaseSettings>(defaults: T): Promise<T> {
-  // Public pages render without Supabase configured (Score Quiver's local POC).
+export async function readUserSettings<T extends object>(
+  defaults: T,
+  table = 'user_settings',
+): Promise<T> {
+  // Public pages render without Supabase configured (ScoreSquid Archery's local POC).
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return defaults;
 
   const supabase = await createClient();
@@ -87,7 +87,7 @@ export async function readUserSettings<T extends BaseSettings>(defaults: T): Pro
   if (!user) return defaults;
 
   const { data } = await supabase
-    .from('user_settings')
+    .from(table)
     .select(Object.keys(defaults).join(', '))
     .eq('user_id', user.id)
     .single();
@@ -95,10 +95,11 @@ export async function readUserSettings<T extends BaseSettings>(defaults: T): Pro
   return data ? (data as unknown as T) : defaults;
 }
 
-export async function writeUserSetting<T extends BaseSettings>(
+export async function writeUserSetting<T extends object>(
   key: unknown,
   value: unknown,
   defaults: T,
+  table = 'user_settings',
 ): Promise<ActionResult> {
   const supabase = await createClient();
   const {
@@ -109,7 +110,7 @@ export async function writeUserSetting<T extends BaseSettings>(
   const update = parseSettingUpdate(key, value, defaults);
   if (!update) return { error: 'Invalid setting' };
 
-  const { error } = await supabase.from('user_settings').upsert(
+  const { error } = await supabase.from(table).upsert(
     { ...update, user_id: user.id, updated_at: new Date().toISOString() },
     { onConflict: 'user_id' },
   );
