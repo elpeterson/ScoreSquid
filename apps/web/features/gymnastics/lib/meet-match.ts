@@ -6,6 +6,8 @@ export type SavedMeet = {
   name: string;
   start_date: string | null;
   mso_meet_id: string | null;
+  /** MSO meets the parent said this is not. */
+  rejected_mso_meet_ids?: string[] | null;
 };
 
 /** An MSO meet from a gymnast's history. */
@@ -47,6 +49,9 @@ function isoMonth(value: string | null): number | null {
   return match ? Number(match[1]) * 12 + Number(match[2]) - 1 : null;
 }
 
+const isRejected = (saved: SavedMeet, meet: MsoMeetRef) =>
+  meet.meetId !== null && (saved.rejected_mso_meet_ids ?? []).includes(meet.meetId);
+
 /**
  * Whether a saved meet with no MSO ID is this one. The name must match. Dates up
  * to a month apart count, since MSO's month and the stored day can straddle one.
@@ -54,6 +59,7 @@ function isoMonth(value: string | null): number | null {
  */
 function isSameUnlinkedMeet(saved: SavedMeet, meet: MsoMeetRef): boolean {
   if (saved.mso_meet_id !== null || saved.name !== meet.name) return false;
+  if (isRejected(saved, meet)) return false;
   const a = isoMonth(saved.start_date);
   const b = hintMonth(meet.dateHint);
   return a === null || b === null || Math.abs(a - b) <= 1;
@@ -87,4 +93,44 @@ export function matchImportedMeets(meets: MsoMeetRef[], saved: SavedMeet[]): Mee
     used.add(found.id);
     return { saved: found, linkMeetId: meet.meetId };
   });
+}
+
+const words = (name: string) =>
+  new Set(name.toLowerCase().match(/[a-z0-9]+/g) ?? []);
+
+/** How alike two names are, from 0 (no words shared) to 1 (the same words). */
+export function nameSimilarity(a: string, b: string): number {
+  const left = words(a);
+  const right = words(b);
+  if (left.size === 0 || right.size === 0) return 0;
+  const shared = [...left].filter((word) => right.has(word)).length;
+  return shared / Math.max(left.size, right.size);
+}
+
+/**
+ * Saved meets with no MSO ID that may be this MSO meet, likeliest first. A meet
+ * qualifies if it's within a month, or has no date to compare and a similar name.
+ * These are only suggestions: nothing changes until the parent confirms one.
+ */
+export function suggestSavedMeets(
+  meet: MsoMeetRef,
+  saved: SavedMeet[],
+  claimedIds: ReadonlySet<string>,
+): SavedMeet[] {
+  const month = hintMonth(meet.dateHint);
+  return saved
+    .filter((s) => s.mso_meet_id === null && !claimedIds.has(s.id) && !isRejected(s, meet))
+    .map((s) => {
+      const savedMonth = isoMonth(s.start_date);
+      const distance = month === null || savedMonth === null ? null : Math.abs(month - savedMonth);
+      return { s, distance, similarity: nameSimilarity(s.name, meet.name) };
+    })
+    .filter(({ distance, similarity }) =>
+      distance === null ? similarity >= 0.5 : distance <= 1,
+    )
+    .sort(
+      (a, b) =>
+        b.similarity - a.similarity || (a.distance ?? 99) - (b.distance ?? 99),
+    )
+    .map(({ s }) => s);
 }
