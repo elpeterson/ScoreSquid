@@ -4,11 +4,7 @@ import { hostnameOf, isRootDomainHost, isSport, rootRedirect, SPORT_COOKIE, spor
 
 const sportProxies: Record<Sport, ReturnType<typeof createAuthProxy>> = {
   gymnastics: createAuthProxy({ rewritePrefix: '/gymnastics' }),
-  archery: createAuthProxy({
-    rewritePrefix: '/archery',
-    // Public pages: no session needed (the archer POC is lookup-by-number only).
-    publicPrefixes: ['/archer'],
-  }),
+  archery: createAuthProxy({ rewritePrefix: '/archery' }),
 };
 
 export async function proxy(request: NextRequest) {
@@ -33,7 +29,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Only real files skip the proxy. Excluding by extension would let /archery/archer/1.png
+    // Only real files skip the proxy. Excluding by extension would let /archery/events/1.png
     // reach an internal route directly, on any host.
     '/((?!_next/static|_next/image|_vercel/|favicon\\.ico$|icon\\.svg$).*)',
   ],

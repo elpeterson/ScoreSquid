@@ -77,7 +77,7 @@ export async function readUserSettings<T extends object>(
   defaults: T,
   table = 'user_settings',
 ): Promise<T> {
-  // Public pages render without Supabase configured (ScoreSquid Archery's local POC).
+  // Pages can render without Supabase configured.
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return defaults;
 
   const supabase = await createClient();
