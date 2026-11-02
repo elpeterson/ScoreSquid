@@ -41,7 +41,7 @@ export default async function MainLayout({
                 ScoreSquid Archery
               </h1>
               <h1 className="text-xl font-bold text-white tracking-wide cursor-pointer md:hidden">
-                SQ
+                Arc
               </h1>
             </Link>
 

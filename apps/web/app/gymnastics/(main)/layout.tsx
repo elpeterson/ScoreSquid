@@ -41,7 +41,7 @@ export default async function MainLayout({
                 ScoreSquid Gymnastics
               </h1>
               <h1 className="text-xl font-bold text-white tracking-wide cursor-pointer md:hidden">
-                GS
+                Gym
               </h1>
             </Link>
 
