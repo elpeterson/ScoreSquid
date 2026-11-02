@@ -17,7 +17,7 @@ export default async function AccountPage({
 
   const { data: archers } = await supabase
     .from('archer_athletes')
-    .select('id, name')
+    .select('id, name, membership_number, competition_start_date')
     .eq('user_id', user?.id)
     .order('created_at', { ascending: true });
 

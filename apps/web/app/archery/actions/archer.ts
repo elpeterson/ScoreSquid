@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { deleteProfileWithFiles } from '@scoresquid/auth/profile';
 import { createClient } from '@scoresquid/auth/server';
 import { revalidatePath } from 'next/cache';
+import { latestStartDate, parseArcherDetails } from '@/features/archery/lib/archer-profile';
 
 const COOKIE_NAME = 'scoresquid_active_archer';
 
@@ -50,19 +51,56 @@ export async function ensureActiveArcher() {
   return firstArcher?.id ?? null;
 }
 
-export async function createArcher(formData: FormData) {
+const detailsFrom = (formData: FormData) =>
+  parseArcherDetails(
+    {
+      name: formData.get('name'),
+      membershipNumber: formData.get('membership_number'),
+      competitionStartDate: formData.get('competition_start_date'),
+    },
+    latestStartDate(),
+  );
+
+type SaveResult = { error?: string; existingArcherId?: string; success?: boolean };
+
+/** The result when a membership number is already on another of the user's archers. */
+async function numberTaken(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  membershipNumber: string | null,
+): Promise<SaveResult> {
+  const { data } = await supabase
+    .from('archer_athletes')
+    .select('id, name')
+    .eq('user_id', userId)
+    .eq('membership_number', membershipNumber)
+    .limit(1)
+    .maybeSingle();
+  return {
+    error: data ? `${data.name} already has this membership number.` : 'An archer already has this membership number.',
+    existingArcherId: data?.id,
+  };
+}
+
+export async function createArcher(formData: FormData): Promise<SaveResult> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: 'Not authenticated' };
 
-  const name = (formData.get('name') as string)?.trim();
-  if (!name) return { error: 'Name is required' };
+  const parsed = detailsFrom(formData);
+  if ('error' in parsed) return parsed;
+  const { name, membershipNumber, competitionStartDate } = parsed.details;
 
-  const { data: newId, error } = await supabase.rpc('create_archer', { p_name: name });
+  const { data: newId, error } = await supabase.rpc('create_archer', {
+    p_name: name,
+    p_membership_number: membershipNumber,
+    p_competition_start_date: competitionStartDate,
+  });
 
-  if (error) return { error: error.message };
+  if (error?.code === '23505') return numberTaken(supabase, user.id, membershipNumber);
+  if (error) return { error: 'Failed to create this archer.' };
 
   await setActiveArcher(newId as string);
 
@@ -70,24 +108,26 @@ export async function createArcher(formData: FormData) {
   return { success: true };
 }
 
-export async function updateArcher(id: string, formData: FormData) {
+export async function updateArcher(id: string, formData: FormData): Promise<SaveResult> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: 'Not authenticated' };
 
-  const name = (formData.get('name') as string)?.trim();
-  if (!name) return { error: 'Name is required' };
+  const parsed = detailsFrom(formData);
+  if ('error' in parsed) return parsed;
+  const { name, membershipNumber, competitionStartDate } = parsed.details;
 
-  const { error } = await supabase
-    .from('athletes')
-    .update({ name, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .eq('sport', 'archery');
+  const { error } = await supabase.rpc('update_archer', {
+    p_id: id,
+    p_name: name,
+    p_membership_number: membershipNumber,
+    p_competition_start_date: competitionStartDate,
+  });
 
-  if (error) return { error: error.message };
+  if (error?.code === '23505') return numberTaken(supabase, user.id, membershipNumber);
+  if (error) return { error: 'Failed to update this archer.' };
 
   revalidatePath('/archery/account');
   revalidatePath('/archery');
