@@ -9,28 +9,34 @@ import { setActiveArcher } from '@/app/archery/actions/archer';
 export function ArcherDetailsFields({
   membershipNumber,
   competitionStartDate,
+  required = false,
 }: {
   membershipNumber?: string | null;
   competitionStartDate?: string | null;
+  /** For a Between Ends search, which can't run without them. */
+  required?: boolean;
 }) {
+  const optional = required ? '' : ' (optional)';
   return (
     <>
       <div className="space-y-2">
-        <Label htmlFor="membership_number">USA Archery membership number (optional)</Label>
+        <Label htmlFor="membership_number">USA Archery membership number{optional}</Label>
         <Input
           id="membership_number"
           name="membership_number"
           inputMode="numeric"
+          required={required}
           defaultValue={membershipNumber ?? ''}
           placeholder="e.g. 123456"
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="competition_start_date">Competition start date (optional)</Label>
+        <Label htmlFor="competition_start_date">Competition start date{optional}</Label>
         <Input
           id="competition_start_date"
           name="competition_start_date"
           type="date"
+          required={required}
           defaultValue={competitionStartDate ?? ''}
         />
         <p className="text-xs text-muted-foreground">

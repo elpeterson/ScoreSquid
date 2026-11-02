@@ -130,6 +130,7 @@ export async function updateArcher(id: string, formData: FormData): Promise<Save
   if (error) return { error: 'Failed to update this archer.' };
 
   revalidatePath('/archery/account');
+  revalidatePath('/archery/import');
   revalidatePath('/archery');
   return { success: true };
 }
@@ -180,6 +181,7 @@ export async function deleteArcher(id: string) {
   if (error) return { error };
 
   revalidatePath('/archery/account');
+  revalidatePath('/archery/import');
   revalidatePath('/archery');
   return { success: true };
 }

@@ -3,6 +3,7 @@
 import { start } from 'workflow/api';
 import { createClient } from '@scoresquid/auth/server';
 import { isStale } from '@/features/archery/lib/betweenends/crawl';
+import type { SearchMatch, SearchStatus } from '@/features/archery/lib/betweenends/search-view';
 import { beSearchWorkflow } from '@/features/archery/workflows/be-search';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -68,8 +69,44 @@ export async function cancelBeSearch(searchId: string): Promise<{ error?: string
   return error ? { error: 'There is no running search to cancel' } : {};
 }
 
+export type BeSearchView = {
+  search: {
+    id: string;
+    from_date: string;
+    to_date: string;
+    status: SearchStatus;
+    tournaments_total: number;
+    tournaments_done: number;
+    heartbeat_at: string | null;
+    created_at: string;
+  };
+  matches: SearchMatch[];
+};
+
+const SEARCH_COLUMNS = 'id, from_date, to_date, status, tournaments_total, tournaments_done, heartbeat_at, created_at';
+
+async function loadMatches(supabase: Awaited<ReturnType<typeof createClient>>, search: BeSearchView['search']) {
+  const { data: matches } = await supabase
+    .from('arch_be_search_matches')
+    .select('event_id, aid, match_kind, tournament_name, tournament_date, division, total')
+    .eq('search_id', search.id)
+    .order('tournament_date', { ascending: false });
+
+  const stale = isStale(
+    { status: search.status, heartbeatAt: search.heartbeat_at, createdAt: search.created_at },
+    Date.now(),
+  );
+  if (stale) {
+    // Limited in the database, so polling this can't start runs without end.
+    const { data: kicked } = await supabase.rpc('kick_be_search', { p_id: search.id });
+    if (kicked) await startWorker().catch(() => undefined);
+  }
+
+  return { search, matches: (matches ?? []) as SearchMatch[] };
+}
+
 /** The user's search and its matches. May restart a run if the search has gone silent. */
-export async function getBeSearch(searchId: string) {
+export async function getBeSearch(searchId: string): Promise<BeSearchView | null> {
   if (typeof searchId !== 'string' || !UUID.test(searchId)) return null;
   const supabase = await createClient();
   const {
@@ -79,27 +116,47 @@ export async function getBeSearch(searchId: string) {
 
   const { data: search } = await supabase
     .from('arch_be_searches')
-    .select('id, athlete_id, from_date, to_date, status, tournaments_total, tournaments_done, heartbeat_at, created_at')
+    .select(SEARCH_COLUMNS)
     .eq('id', searchId)
     .eq('user_id', user.id)
     .single();
-  if (!search) return null;
+  return search ? loadMatches(supabase, search as BeSearchView['search']) : null;
+}
 
-  const { data: matches } = await supabase
-    .from('arch_be_search_matches')
-    .select('event_id, aid, match_kind, tournament_name, tournament_date, division, total')
-    .eq('search_id', searchId)
-    .order('tournament_date', { ascending: false });
+/** An archer's latest search, and how far their last finished one reached. */
+export async function getLatestBeSearch(
+  athleteId: string,
+): Promise<{ view: BeSearchView | null; lastFinishedTo: string | null }> {
+  const none = { view: null, lastFinishedTo: null };
+  if (typeof athleteId !== 'string' || !UUID.test(athleteId)) return none;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return none;
 
-  const stale = isStale(
-    { status: search.status, heartbeatAt: search.heartbeat_at, createdAt: search.created_at },
-    Date.now(),
-  );
-  if (stale) {
-    // Limited in the database, so polling this can't start runs without end.
-    const { data: kicked } = await supabase.rpc('kick_be_search', { p_id: searchId });
-    if (kicked) await startWorker().catch(() => undefined);
-  }
+  const [{ data: latest }, { data: finished }] = await Promise.all([
+    supabase
+      .from('arch_be_searches')
+      .select(SEARCH_COLUMNS)
+      .eq('athlete_id', athleteId)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('arch_be_searches')
+      .select('to_date')
+      .eq('athlete_id', athleteId)
+      .eq('user_id', user.id)
+      .eq('status', 'finished')
+      .order('to_date', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
-  return { search, matches: matches ?? [] };
+  return {
+    view: latest ? await loadMatches(supabase, latest as BeSearchView['search']) : null,
+    lastFinishedTo: finished?.to_date ?? null,
+  };
 }
