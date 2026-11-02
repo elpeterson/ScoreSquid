@@ -1,4 +1,4 @@
--- Initial schema for Gymnast Shoebox: tables, row level security, and the
+-- Initial schema for ScoreSquid Gymnastics: tables, row level security, and the
 -- dashboard view. Previously lived in the README's "Database Setup" section.
 --
 -- New project: apply with `supabase db push` or paste into the SQL Editor.
