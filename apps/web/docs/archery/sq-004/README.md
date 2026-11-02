@@ -3,7 +3,7 @@
 Measured 2026-11-02. Only totals are recorded here: no names or membership numbers.
 
 ## Decisions
-1. **It runs on Vercel Workflow, not GitHub Actions**, once the preview test below passes.
+1. **It runs on Vercel Workflow, not GitHub Actions.** The preview test below passed.
 2. **It keeps what it reads, narrowly,** in private `be_*` tables: entries for ranking events, and arrows only for matched entries. App users can't read those tables. A parent sees a copy of their own search's matches.
 3. **It reads a tournament's scores only when the number or a possible name match appears** in that event.
 4. **One search reads at a time,** at one request every 1.1 s, with progress saved in Postgres after each batch.
@@ -21,7 +21,7 @@ Measured 2026-11-02. Only totals are recorded here: no names or membership numbe
 | Payloads | Encrypted; `experimental_retention: 0` stops them being readable when a run ends, with copies gone within 36 days | Pass only a search id, and return only counts |
 | Metadata | Not encrypted, and kept for up to a year | Never put a number or name in attributes or hook tokens |
 
-Compute and queue charges were not checked against Hobby's allowances: read the Usage tab after the preview test. Hobby is for non-commercial use, so charging for ScoreSquid would mean moving to Pro.
+Compute and queue charges were not checked against Hobby's allowances: read the Usage tab once real searches run. Hobby is for non-commercial use, so charging for ScoreSquid would mean moving to Pro.
 
 ## Measurements
 From `GET /tournaments/`, plus 20 tournaments spread across the last year (62 requests at 1 request a second).
@@ -57,17 +57,27 @@ Branch `chore/sq-004-workflow-proof`: the real client over a fake transport in t
 
 The failed recovery was on the Local World, whose queue is in memory and which is documented as not for production, so it says nothing about Vercel in either direction. The app shouldn't depend on it anyway: see "Restartable" below.
 
-## Still to prove: run this before building on it
-On a preview of the proof branch, `hang=1` makes one step outlast Hobby's 300 s limit, so Vercel kills it:
+## Preview test on Vercel: passed
+Run on a Hobby preview of the proof branch on 2026-11-02, with `hang=1` making one step outlast the 300 s function limit:
 
 ```bash
-git push -u origin chore/sq-004-workflow-proof
 cd apps/web
-npx vercel curl "/sq004-proof?requests=600&hang=1" --deployment <preview-url> -- --request POST
-npx vercel curl "/sq004-proof?run=<runId>" --deployment <preview-url>   # after about 16 minutes
+npx vercel curl "<preview-url>/sq004-proof?requests=600&hang=1" -- --request POST
+npx vercel curl "<preview-url>/sq004-proof?run=<runId>"
 ```
 
-**Pass:** `status` is `completed`, `requests` is 600, `elapsedSeconds` is over 600 and `minGapMs` is about 1,000. If the run fails or sticks, the fallback is a self-continuing chain of ordinary functions using the same Postgres checkpoints. Then delete the branch; don't merge it.
+| | Result |
+|---|---|
+| Status | `completed`, with all 600 requests made |
+| Elapsed | 1,099 s, well past the function limit |
+| Recovery | The hung step started at 17:37:01 and was started again at 17:45:16 (13 `step_started` events for 12 steps), then finished normally |
+| Gaps | Minimum 999 ms; maximum 497 s, the stall during recovery |
+| Events | 40 for 600 requests, about 3.3 per batch |
+
+What this means for the build:
+- **A killed step stalled the run for about 8 minutes.** The search should show as still running through a gap that long, and the stale-heartbeat limit needs to be longer than it.
+- **A retried step starts again from its beginning,** so a real batch killed partway would repeat its requests unless each read is saved as it happens.
+- The test used a fake Between Ends and no database, so the crawler's own reads and writes are still untested.
 
 ## Design for the build
 - **Start:** the server action inserts a queued search, then calls `start(crawl, [searchId], { experimental_retention: 0 })`.
@@ -77,7 +87,7 @@ npx vercel curl "/sq004-proof?run=<runId>" --deployment <preview-url>   # after 
 - **Pacing:** wait out the interval at the end of each step, because the next step may get a new client with no memory of the last request.
 - **Client gap:** a `429` isn't retried and `Retry-After` is ignored. Treat it as a pause (criterion 7).
 - **Proxy:** `proxy.ts` must exclude `.well-known/workflow/`, or Workflow's internal calls hit the auth proxy.
-- **Dependency warning:** the build warns about mismatched `@vercel/oidc` versions (3.x and 4.0.5) inside Workflow's dependencies. It didn't affect the local proof; confirm on the preview.
+- **Dependency warning:** the build warns about mismatched `@vercel/oidc` versions (3.x and 4.0.5) inside Workflow's dependencies. It didn't affect the local proof or the preview test.
 
 ## Crawler credential
 The draft schema gives `be_crawler` only the cache and search-progress columns. The password is set by hand, never in a migration. Connect through the shared pooler as `be_crawler.<project-ref>` on port 6543, since it has IPv4 on every plan and transaction mode suits serverless, with prepared statements off. This adds a `pg` or `postgres` dependency and has **not been tried on hosted Supabase**.
