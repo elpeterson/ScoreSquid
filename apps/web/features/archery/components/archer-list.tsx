@@ -34,10 +34,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@scoresquid/ui/components/alert-dialog';
+import { formatDate } from '@/lib/dates';
+import { ArcherDetailsFields, ArcherSaveError } from './archer-details-fields';
 
 type Archer = {
   id: string;
   name: string;
+  membership_number: string | null;
+  competition_start_date: string | null;
 };
 
 export function ArcherList({ archers }: { archers: Archer[] }) {
@@ -45,7 +49,7 @@ export function ArcherList({ archers }: { archers: Archer[] }) {
     <Card>
       <CardHeader>
         <CardTitle>Manage Profiles</CardTitle>
-        <CardDescription>Rename or remove archer profiles.</CardDescription>
+        <CardDescription>Update or remove archer profiles.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {archers.length === 0 && (
@@ -64,13 +68,15 @@ export function ArcherList({ archers }: { archers: Archer[] }) {
 function ArcherRow({ archer }: { archer: Archer }) {
   const [isPending, startTransition] = useTransition();
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [saveError, setSaveError] = useState<{ error: string; existingArcherId?: string } | null>(null);
 
   const handleUpdate = async (formData: FormData) => {
     startTransition(async () => {
       const result = await updateArcher(archer.id, formData);
       if (result?.error) {
-        toast.error(result.error);
+        setSaveError({ error: result.error, existingArcherId: result.existingArcherId });
       } else {
+        setSaveError(null);
         toast.success('Profile updated');
         setIsEditOpen(false);
       }
@@ -94,11 +100,27 @@ function ArcherRow({ archer }: { archer: Archer }) {
         <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
           <User className="h-4 w-4" />
         </div>
-        <span className="font-medium">{archer.name}</span>
+        <div className="min-w-0">
+          <span className="font-medium">{archer.name}</span>
+          {archer.membership_number && (
+            <p className="text-xs text-muted-foreground">USA Archery: {archer.membership_number}</p>
+          )}
+          {archer.competition_start_date && (
+            <p className="text-xs text-muted-foreground">
+              Competing since {formatDate(archer.competition_start_date)}
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-2">
-        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <Dialog
+          open={isEditOpen}
+          onOpenChange={(open) => {
+            setIsEditOpen(open);
+            setSaveError(null);
+          }}
+        >
           <DialogTrigger asChild>
             <Button
               variant="ghost"
@@ -112,16 +134,26 @@ function ArcherRow({ archer }: { archer: Archer }) {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Edit Archer Profile</DialogTitle>
-              <DialogDescription>Update the profile name.</DialogDescription>
+              <DialogDescription>Update the profile details.</DialogDescription>
             </DialogHeader>
             <form action={handleUpdate}>
-              <div className="py-4 space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  defaultValue={archer.name}
-                  required
+              <div className="py-4 space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    defaultValue={archer.name}
+                    required
+                  />
+                </div>
+                <ArcherDetailsFields
+                  membershipNumber={archer.membership_number}
+                  competitionStartDate={archer.competition_start_date}
+                />
+                <ArcherSaveError
+                  error={saveError?.error ?? null}
+                  existingArcherId={saveError?.existingArcherId}
                 />
               </div>
               <DialogFooter>

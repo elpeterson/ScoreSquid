@@ -30,6 +30,7 @@ import {
 import { Input } from '@scoresquid/ui/components/input';
 import { Label } from '@scoresquid/ui/components/label';
 import { setActiveArcher, createArcher } from '@/app/archery/actions/archer';
+import { ArcherDetailsFields, ArcherSaveError } from './archer-details-fields';
 import { toast } from 'sonner';
 
 type Archer = {
@@ -49,6 +50,8 @@ export function ArcherSwitcher({
     archers.length === 0,
   );
 
+  const [saveError, setSaveError] = React.useState<{ error: string; existingArcherId?: string } | null>(null);
+
   const selectedArcher =
     archers.find((a) => a.id === activeArcherId) || archers[0];
 
@@ -61,8 +64,9 @@ export function ArcherSwitcher({
   const handleCreateArcher = async (formData: FormData) => {
     const result = await createArcher(formData);
     if (result?.error) {
-      toast.error(result.error);
+      setSaveError({ error: result.error, existingArcherId: result.existingArcherId });
     } else {
+      setSaveError(null);
       toast.success('Archer profile created');
       setShowNewArcherDialog(false);
       setOpen(false);
@@ -140,9 +144,16 @@ export function ArcherSwitcher({
           </DialogDescription>
         </DialogHeader>
         <form action={handleCreateArcher}>
-          <div className="space-y-2 py-2 pb-4">
-            <Label htmlFor="name">Archer Name</Label>
-            <Input id="name" name="name" placeholder="e.g. Robin" required />
+          <div className="space-y-4 py-2 pb-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Archer Name</Label>
+              <Input id="name" name="name" placeholder="e.g. Robin" required />
+            </div>
+            <ArcherDetailsFields />
+            <ArcherSaveError
+              error={saveError?.error ?? null}
+              existingArcherId={saveError?.existingArcherId}
+            />
           </div>
           <DialogFooter>
             <Button
