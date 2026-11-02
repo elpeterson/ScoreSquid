@@ -218,7 +218,7 @@ export function ImportView({ initialMsoId }: { initialMsoId?: string | null }) {
             <Label htmlFor="msoId">Athlete ID</Label>
             <Input
               id="msoId"
-              placeholder="1184668"
+              placeholder="1234567"
               value={msoId}
               onChange={(e) => setMsoId(e.target.value)}
             />
