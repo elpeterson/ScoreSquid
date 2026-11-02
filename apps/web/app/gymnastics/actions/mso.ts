@@ -10,6 +10,7 @@ import {
   isMsoMeetId,
   matchImportedMeets,
   msoMeetIdFromUrl,
+  suggestSavedMeets,
   type MsoMeetRef,
   type SavedMeet,
 } from '@/features/gymnastics/lib/meet-match';
@@ -35,6 +36,8 @@ export type MsoMeetSummary = {
   isImported?: boolean;
   // The saved competition this meet was imported as, when it was.
   savedId?: string;
+  // Hand-entered meets this might be, likeliest first. Only ever suggestions.
+  suggestedIds?: string[];
   // Present when the summary came from the JSON API (enables the JSON import
   // path, which also carries division). Absent for scraped summaries.
   meetId?: string;
@@ -47,7 +50,10 @@ export type MsoMeetSummary = {
 
 type FetchMeetsResult =
   | { error: string; success?: undefined; meets?: undefined }
-  | { success: true; meets: MsoMeetSummary[]; error?: undefined };
+  | { success: true; meets: MsoMeetSummary[]; linkable: LinkableMeet[]; error?: undefined };
+
+/** A saved meet with no MSO ID, which a parent can link to an MSO meet. */
+export type LinkableMeet = { id: string; name: string; start_date: string | null };
 
 type ImportResult =
   | { error: string; success?: undefined; warning?: undefined; savedId?: undefined }
@@ -56,40 +62,51 @@ type ImportResult =
 const ALREADY_IMPORTED = 'This meet is already imported.';
 
 /**
- * The saved competition each meet was imported as, or null. An older import with
- * no MSO ID gets one here, so it stays recognised if it's renamed later.
+ * How each meet relates to the gymnast's saved meets: which it was imported as,
+ * which it might be, and which saved meets are free to link. An older import with
+ * the same name and date gets the MSO ID here, so it stays recognised if renamed.
  */
-async function importedMeetIds(
+async function matchSavedMeets(
   supabase: Awaited<ReturnType<typeof createClient>>,
   athleteId: string,
   meets: MsoMeetRef[],
-): Promise<(string | null)[]> {
+): Promise<{ results: { savedId?: string; suggestedIds: string[] }[]; linkable: LinkableMeet[] }> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return meets.map(() => null);
+  if (!user) return { results: meets.map(() => ({ suggestedIds: [] })), linkable: [] };
 
   const { data } = await supabase
     .from('gym_competitions')
-    .select('id, name, start_date, mso_meet_id')
+    .select('id, name, start_date, mso_meet_id, rejected_mso_meet_ids')
     .eq('athlete_id', athleteId)
     .eq('user_id', user.id);
 
-  const matches = matchImportedMeets(meets, (data ?? []) as SavedMeet[]);
+  const saved = (data ?? []) as SavedMeet[];
+  const matches = matchImportedMeets(meets, saved);
 
   await Promise.all(
-    matches.map(async ({ saved, linkMeetId }) => {
-      if (!saved || !isMsoMeetId(linkMeetId)) return;
+    matches.map(async ({ saved: match, linkMeetId }) => {
+      if (!match || !isMsoMeetId(linkMeetId)) return;
       await supabase
         .from('gym_competitions')
         .update({ mso_meet_id: linkMeetId })
-        .eq('id', saved.id)
+        .eq('id', match.id)
         .eq('user_id', user.id)
         .is('mso_meet_id', null);
     }),
   );
 
-  return matches.map((m) => m.saved?.id ?? null);
+  const claimed = new Set(matches.flatMap((m) => (m.saved ? [m.saved.id] : [])));
+  return {
+    results: matches.map((m, i) => ({
+      savedId: m.saved?.id,
+      suggestedIds: m.saved ? [] : suggestSavedMeets(meets[i], saved, claimed).map((s) => s.id),
+    })),
+    linkable: saved
+      .filter((s) => s.mso_meet_id === null && !claimed.has(s.id))
+      .map(({ id, name, start_date }) => ({ id, name, start_date })),
+  };
 }
 
 async function fetchMsoMeetsScrape(msoId: string): Promise<FetchMeetsResult> {
@@ -155,7 +172,7 @@ async function fetchMsoMeetsScrape(msoId: string): Promise<FetchMeetsResult> {
 
     if (!activeGymnastId) return { error: 'Authentication required' };
 
-    const savedIds = await importedMeetIds(
+    const { results, linkable } = await matchSavedMeets(
       supabase,
       activeGymnastId,
       meets.map((m) => ({
@@ -167,11 +184,11 @@ async function fetchMsoMeetsScrape(msoId: string): Promise<FetchMeetsResult> {
 
     const processedMeets = meets.map((m, i) => ({
       ...m,
-      isImported: savedIds[i] !== null,
-      savedId: savedIds[i] ?? undefined,
+      isImported: results[i].savedId !== undefined,
+      ...results[i],
     }));
 
-    return { success: true, meets: processedMeets };
+    return { success: true, meets: processedMeets, linkable };
   } catch {
     return { error: 'Error parsing MSO data' };
   }
@@ -325,7 +342,7 @@ async function fetchMsoMeetsApi(msoId: string): Promise<FetchMeetsResult> {
     return { error: 'No meets found. Double check the Athlete ID.' };
   }
 
-  const savedIds = await importedMeetIds(
+  const { results, linkable } = await matchSavedMeets(
     ctx.supabase,
     ctx.gymnastId,
     history.map((m) => ({ meetId: m.meetId, name: m.meetName, dateHint: m.monthYear })),
@@ -340,11 +357,11 @@ async function fetchMsoMeetsApi(msoId: string): Promise<FetchMeetsResult> {
     level: m.level ?? '',
     division: m.division,
     detailsUrl: `https://www.meetscoresonline.com/results/${m.meetId}`,
-    isImported: savedIds[i] !== null,
-    savedId: savedIds[i] ?? undefined,
+    isImported: results[i].savedId !== undefined,
+    ...results[i],
   }));
 
-  return { success: true, meets };
+  return { success: true, meets, linkable };
 }
 
 async function importMsoMeetApi(meet: MsoMeetSummary): Promise<ImportResult> {
@@ -482,19 +499,26 @@ async function loadLinkedCompetition(
   savedId: string,
   meet: MsoMeetSummary,
 ): Promise<SavedCompetition | null> {
+  const row = await loadOwnCompetition(ctx, savedId);
+  const meetId = meet.meetId ?? msoMeetIdFromUrl(meet.detailsUrl);
+  return row && meetId && row.mso_meet_id === meetId ? row : null;
+}
+
+async function loadOwnCompetition(
+  ctx: ReimportContext,
+  savedId: string,
+): Promise<(SavedCompetition & { mso_meet_id: string | null; rejected_mso_meet_ids: string[] }) | null> {
   const { data } = await ctx.supabase
     .from('gym_competitions')
     .select(
-      'name, level, division, start_date, end_date, all_around_place, mso_meet_id, scores:gym_scores(apparatus, value, place)',
+      'name, level, division, start_date, end_date, all_around_place, mso_meet_id, rejected_mso_meet_ids, scores:gym_scores(apparatus, value, place)',
     )
     .eq('id', savedId)
     .eq('athlete_id', ctx.gymnastId)
     .eq('user_id', ctx.user.id)
     .maybeSingle();
 
-  const meetId = meet.meetId ?? msoMeetIdFromUrl(meet.detailsUrl);
-  if (!data || !meetId || data.mso_meet_id !== meetId) return null;
-  return data as SavedCompetition;
+  return data as (SavedCompetition & { mso_meet_id: string | null; rejected_mso_meet_ids: string[] }) | null;
 }
 
 type ReimportPreview =
@@ -552,4 +576,89 @@ export async function applyMsoReimport(
   revalidatePath('/gymnastics/dashboard');
   revalidatePath('/gymnastics/insights');
   return { success: true };
+}
+
+// ---------------------------------------------------------------------------
+// Link: fill a hand-entered meet from MSO instead of importing a new one.
+// ---------------------------------------------------------------------------
+
+/** The saved meet and MSO's data, if the saved meet is theirs and not yet linked. */
+async function loadForLink(ctx: ReimportContext, savedId: string, meet: MsoMeetSummary) {
+  const saved = await loadOwnCompetition(ctx, savedId);
+  if (!saved) return { error: 'That meet could not be found.' };
+  if (saved.mso_meet_id !== null) return { error: 'That meet is already linked to MSO.' };
+  const mso = await loadMsoMeet(ctx, meet);
+  if ('error' in mso) return { error: mso.error };
+  return { saved, mso };
+}
+
+export async function previewMsoLink(
+  savedId: string,
+  meet: MsoMeetSummary,
+): Promise<ReimportPreview> {
+  const ctx = await activeGymnastContext();
+  if (!ctx) return { error: 'Authentication required' };
+
+  try {
+    const loaded = await loadForLink(ctx, savedId, meet);
+    if ('error' in loaded) return { error: loaded.error! };
+    return { changes: diffMeet(loaded.saved!, loaded.mso!) };
+  } catch {
+    return { error: 'Failed to read this meet from MSO. Please try again.' };
+  }
+}
+
+export async function applyMsoLink(
+  savedId: string,
+  meet: MsoMeetSummary,
+  chosenKeys: string[],
+): Promise<ImportResult> {
+  const ctx = await activeGymnastContext();
+  if (!ctx) return { error: 'Authentication required' };
+  if (!Array.isArray(chosenKeys)) return { error: 'Nothing was chosen' };
+
+  const meetId = meet.meetId ?? msoMeetIdFromUrl(meet.detailsUrl);
+  if (!isMsoMeetId(meetId)) return { error: 'Missing meet id' };
+
+  try {
+    const loaded = await loadForLink(ctx, savedId, meet);
+    if ('error' in loaded) return { error: loaded.error! };
+
+    const update = buildMeetUpdate(loaded.saved!, loaded.mso!, chosenKeys);
+    const { error } = await ctx.supabase.rpc('update_competition_from_mso', {
+      p_id: savedId,
+      p_fields: { ...update.fields, mso_meet_id: meetId },
+      p_scores: update.scores,
+    });
+    if (error?.code === '23505') return { error: ALREADY_IMPORTED };
+    if (error) return { error: 'Failed to update this meet.' };
+  } catch {
+    return { error: 'Failed to read this meet from MSO. Please try again.' };
+  }
+
+  revalidatePath('/gymnastics/dashboard');
+  revalidatePath('/gymnastics/insights');
+  return { success: true, savedId };
+}
+
+/** Remember that a saved meet isn't this MSO meet, so it isn't suggested again. */
+export async function rejectMsoSuggestion(
+  savedId: string,
+  meet: MsoMeetSummary,
+): Promise<ImportResult> {
+  const ctx = await activeGymnastContext();
+  if (!ctx) return { error: 'Authentication required' };
+
+  const meetId = meet.meetId ?? msoMeetIdFromUrl(meet.detailsUrl);
+  if (!isMsoMeetId(meetId)) return { error: 'Missing meet id' };
+
+  const saved = await loadOwnCompetition(ctx, savedId);
+  if (!saved) return { error: 'That meet could not be found.' };
+
+  const { error } = await ctx.supabase
+    .from('gym_competitions')
+    .update({ rejected_mso_meet_ids: [...new Set([...saved.rejected_mso_meet_ids, meetId])] })
+    .eq('id', savedId)
+    .eq('user_id', ctx.user.id);
+  return error ? { error: 'Failed to save that.' } : { success: true };
 }

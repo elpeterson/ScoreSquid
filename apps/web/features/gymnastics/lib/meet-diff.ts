@@ -29,6 +29,8 @@ export type MeetChange = {
   label: string;
   mine: string;
   mso: string;
+  /** The parent has nothing here, so taking MSO's value overwrites nothing. */
+  gap: boolean;
 };
 
 export type MeetUpdate = {
@@ -97,7 +99,15 @@ export function diffMeet(saved: SavedCompetition, mso: MsoMeetData): MeetChange[
     const mine = savedValue(saved, key);
     const same =
       typeof theirs === 'number' ? mine !== null && Number(mine) === theirs : mine === theirs;
-    if (!same) changes.push({ key, label: labelFor(key), mine: show(mine), mso: show(theirs) });
+    if (!same) {
+      changes.push({
+        key,
+        label: labelFor(key),
+        mine: show(mine),
+        mso: show(theirs),
+        gap: mine === null || mine === '',
+      });
+    }
   }
   return changes;
 }

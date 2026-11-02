@@ -33,8 +33,8 @@ describe('diffMeet', () => {
       mso({ scores: [{ apparatus: 'vault', value: 9.75, place: 2 }] }),
     );
     expect(changes).toEqual([
-      { key: 'name', label: 'Name', mine: 'My name', mso: 'State' },
-      { key: 'score:vault:value', label: 'Vault score', mine: '9.5', mso: '9.75' },
+      { key: 'name', label: 'Name', mine: 'My name', mso: 'State', gap: false },
+      { key: 'score:vault:value', label: 'Vault score', mine: '9.5', mso: '9.75', gap: false },
     ]);
   });
 
@@ -49,7 +49,7 @@ describe('diffMeet', () => {
 
   it('offers a score the parent is missing', () => {
     const [change] = diffMeet(saved({ scores: [] }), mso({ scores: [{ apparatus: 'vault', value: 9, place: null }] }));
-    expect(change).toEqual({ key: 'score:vault:value', label: 'Vault score', mine: 'Not set', mso: '9' });
+    expect(change).toEqual({ key: 'score:vault:value', label: 'Vault score', mine: 'Not set', mso: '9', gap: true });
   });
 
   it('never offers to blank out what MSO leaves out', () => {

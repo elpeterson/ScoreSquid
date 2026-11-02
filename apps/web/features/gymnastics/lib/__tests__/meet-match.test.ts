@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   isMsoMeetId,
   matchImportedMeets,
+  nameSimilarity,
+  suggestSavedMeets,
   msoMeetIdFromUrl,
   type MsoMeetRef,
   type SavedMeet,
@@ -108,5 +110,59 @@ describe('matchImportedMeets', () => {
   it('gives no link when the MSO meet has no ID', () => {
     const [m] = matchImportedMeets([meet({ meetId: null })], [saved()]);
     expect(m.linkMeetId).toBeNull();
+  });
+});
+
+describe('rejected suggestions', () => {
+  it('never links a meet the parent said is different', () => {
+    const [m] = matchImportedMeets([meet()], [saved({ rejected_mso_meet_ids: ['100'] })]);
+    expect(m.saved).toBeNull();
+  });
+});
+
+describe('nameSimilarity', () => {
+  it('compares words, ignoring case and punctuation', () => {
+    expect(nameSimilarity('State Championship', 'state  championship!')).toBe(1);
+    expect(nameSimilarity('Spring State Championship', 'State Championship')).toBeCloseTo(2 / 3);
+    expect(nameSimilarity('Alpha', 'Beta')).toBe(0);
+    expect(nameSimilarity('', 'Beta')).toBe(0);
+  });
+});
+
+describe('suggestSavedMeets', () => {
+  const none = new Set<string>();
+  const hand = (id: string, name: string, start_date: string | null) => saved({ id, name, start_date });
+
+  it('suggests a hand-entered meet from the same month with a different name', () => {
+    const found = suggestSavedMeets(meet(), [hand('h', 'States', '2025-03-14')], none);
+    expect(found.map((s) => s.id)).toEqual(['h']);
+  });
+
+  it('allows a month either side, and no further', () => {
+    expect(suggestSavedMeets(meet(), [hand('h', 'X', '2025-04-02')], none)).toHaveLength(1);
+    expect(suggestSavedMeets(meet(), [hand('h', 'X', '2025-05-02')], none)).toHaveLength(0);
+  });
+
+  it('puts the most similar name first', () => {
+    const found = suggestSavedMeets(
+      meet(),
+      [hand('other', 'Spring Open', '2025-03-01'), hand('close', 'State Meet', '2025-03-20')],
+      none,
+    );
+    expect(found.map((s) => s.id)).toEqual(['close', 'other']);
+  });
+
+  it('needs a similar name when there is no date to compare', () => {
+    expect(suggestSavedMeets(meet(), [hand('h', 'State Championship 2025', null)], none)).toHaveLength(1);
+    expect(suggestSavedMeets(meet(), [hand('h', 'Spring Open', null)], none)).toHaveLength(0);
+  });
+
+  it('leaves out linked, already matched and rejected meets', () => {
+    const list = [
+      saved({ id: 'linked', mso_meet_id: '9' }),
+      saved({ id: 'claimed' }),
+      saved({ id: 'rejected', rejected_mso_meet_ids: ['100'] }),
+    ];
+    expect(suggestSavedMeets(meet(), list, new Set(['claimed']))).toEqual([]);
   });
 });
