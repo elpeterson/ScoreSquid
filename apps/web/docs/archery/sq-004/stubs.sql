@@ -5,11 +5,16 @@ create function auth.uid() returns uuid language sql stable as $$ select nullif(
 grant usage on schema auth to anon, authenticated;
 grant execute on function auth.uid() to anon, authenticated;
 grant usage on schema public to anon, authenticated;
-create table public.athletes (id uuid primary key, user_id uuid, sport text, name text);
+create table public.athletes (id uuid primary key, user_id uuid references auth.users(id), sport text, name text);
 alter table public.athletes enable row level security;
 create policy own on public.athletes for select to authenticated using (user_id = auth.uid());
 grant select on public.athletes to authenticated;
+create table public.archer_profiles (athlete_id uuid primary key, membership_number text, competition_start_date date);
+alter table public.archer_profiles enable row level security;
 create table public.arch_rounds (id int); create table public.gym_scores (id int);
 create view public.archer_athletes as select * from public.athletes;
 -- Mirror Supabase's default: new tables are granted to the app roles, so the revokes must do the work.
 alter default privileges in schema public grant all on tables to anon, authenticated;
+-- Stands in for pg_cron, which plain Postgres doesn't have. The extension line is removed by the run command.
+create schema cron;
+create function cron.schedule(text, text, text) returns bigint language sql as 'select 1::bigint';
