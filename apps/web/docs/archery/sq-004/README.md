@@ -80,8 +80,8 @@ What this means for the build:
 - The test used a fake Between Ends and no database, so the crawler's own reads and writes are still untested.
 
 ## Design for the build
-- **Start:** the server action inserts a queued search, then calls `start(crawl, [searchId], { experimental_retention: 0 })`.
-- **One reader:** the unique index in `draft-schema.sql` allows only one `running` search. One run drains the queue, then ends, so nothing reads Between Ends when no search is waiting.
+- **Start:** the server action calls `start_be_search`, which copies the number and name from the archer's profile, then calls `start(crawl, [searchId], { experimental_retention: 0 })`.
+- **One reader:** a unique index allows only one `running` search. One run drains the queue, then ends, so nothing reads Between Ends when no search is waiting.
 - **Restartable:** Postgres is the record of progress, not the run. Each batch saves what it read. If a running search's heartbeat is stale when its owner views it or a new search starts, a fresh run takes it over and skips what's saved. That needs no schedule.
 - **Cancel:** a function sets the status, and the crawler checks it between batches. Parents have no direct update rights on a search.
 - **Pacing:** wait out the interval at the end of each step, because the next step may get a new client with no memory of the last request.
@@ -90,16 +90,19 @@ What this means for the build:
 - **Dependency warning:** the build warns about mismatched `@vercel/oidc` versions (3.x and 4.0.5) inside Workflow's dependencies. It didn't affect the local proof or the preview test.
 
 ## Crawler credential
-The draft schema gives `be_crawler` only the cache and search-progress columns. The password is set by hand, never in a migration. Connect through the shared pooler as `be_crawler.<project-ref>` on port 6543, since it has IPv4 on every plan and transaction mode suits serverless, with prepared statements off. This adds a `pg` or `postgres` dependency and has **not been tried on hosted Supabase**.
+The migration gives `be_crawler` only the cache and search-progress columns. The password is set by hand, never in a migration. Connect through the shared pooler as `be_crawler.<project-ref>` on port 6543, since it has IPv4 on every plan and transaction mode suits serverless, with prepared statements off. This adds a `pg` or `postgres` dependency and has **not been tried on hosted Supabase**.
 
-## Draft schema
-`draft-schema.sql` is deliberately not in `supabase/migrations/`. `checks.sql` runs 24 checks in a rolled-back transaction, and all pass. The anon and parent checks also passed on the local Supabase image; the crawler checks ran on plain Postgres 17 with `stubs.sql`, because of the crash below.
+## Schema and checks
+The schema is `supabase/migrations/20261102160000_between_ends_crawler.sql`. `checks.sql` tests its access rules in a rolled-back transaction: every check on plain Postgres 17 with `stubs.sql`, and those that don't need the crawler role on the local Supabase image.
 
 ```bash
 docker run -d --rm --name sq004-pg -e POSTGRES_HOST_AUTH_METHOD=trust postgres:17-alpine
-docker cp draft-schema.sql sq004-pg:/draft-schema.sql   # then run stubs.sql and checks.sql with psql from /
+docker cp ../../../supabase/migrations/20261102160000_between_ends_crawler.sql sq004-pg:/migration.sql
+docker exec -i sq004-pg psql -q -U postgres < stubs.sql
+docker exec -i sq004-pg psql -U postgres -v crawler=1 < checks.sql 2>&1 | grep -E "PASS|FAIL|ERROR"
+docker rm -f sq004-pg
 ```
 
-**Don't run `grant <role> to current_user with set true` on the local Supabase image.** It crashed the Postgres backend (signal 11) both times it ran; the database restarted by itself. The draft doesn't use it.
+**Don't run `grant <role> to current_user with set true` on the local Supabase image.** It crashed the Postgres backend (signal 11) both times it ran; the database restarted by itself. The migration doesn't use it.
 
-Before this ships: a cancel function, and a decision on how long `be_*` rows are kept.
+Before this ships: a decision on how long `be_*` rows are kept.
