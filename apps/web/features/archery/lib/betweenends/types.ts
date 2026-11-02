@@ -1,7 +1,7 @@
 // Raw shapes returned by the Between Ends results API
 // (resultsapi.herokuapp.com). The API is undocumented: these types mirror the
 // live responses, keeping the API's own abbreviated keys so a response can be
-// typed without remapping. See docs/between-ends-api.md for what each key means.
+// typed without remapping. See docs/archery/between-ends-api.md for what each key means.
 
 export type BeEventType =
   | 'RankingEvent'
@@ -17,7 +17,7 @@ export type BeTournament = {
   location: string;
   start_date: string; // YYYY-MM-DD
   end_date: string; // YYYY-MM-DD
-  /** Moves when the tournament's results change: the crawl's change feed. */
+  /** Moves when the tournament changes; not yet known to move on every score edit. */
   updated_at: string;
   limg: string | null;
   rimg: string | null;
