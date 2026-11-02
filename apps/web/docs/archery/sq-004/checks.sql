@@ -11,6 +11,7 @@ begin;
 \endif
 \i /migration.sql
 \i /retention.sql
+\i /kick.sql
 
 create function pg_temp.t(label text, role_name text, uid uuid, q text, want text) returns void language plpgsql as $$
 declare n bigint; got text; begin
@@ -120,6 +121,20 @@ select pg_temp.t('can''t start searches', 'be_crawler', null, 'select public.sta
 select pg_temp.t('first running', 'be_crawler', null, $q$update public.arch_be_searches set status='running' where membership_number='444444'$q$, 'rows:1');
 select pg_temp.t('only one running', 'be_crawler', null, $q$update public.arch_be_searches set status='running' where membership_number='222222'$q$, 'denied:23505');
 \endif
+-- Restarting a search gone silent: once per 15 minutes, and only your own.
+insert into public.arch_be_searches (id, user_id, athlete_id, membership_number, archer_name, from_date, to_date, created_at)
+  values ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-00000000000a',
+          '00000000-0000-0000-0000-0000000000ae', '555555', 'Test Archer E', '2026-01-01', '2026-02-01', now() - interval '1 hour');
+\set old '''select 1 where public.kick_be_search(''''00000000-0000-0000-0000-000000000002'''')'''
+select pg_temp.t('anon can''t kick', 'anon', null, :old, 'denied:42501');
+select pg_temp.t('other user''s kick does nothing', 'authenticated', :b, :old, 'rows:0');
+select pg_temp.t('owner''s first kick', 'authenticated', :a, :old, 'rows:1');
+select pg_temp.t('second kick is refused', 'authenticated', :a, :old, 'rows:0');
+do $$ begin raise notice '% kick leaves the heartbeat alone', case when (select heartbeat_at from public.arch_be_searches where id = '00000000-0000-0000-0000-000000000002') is null then 'PASS' else 'FAIL' end; end $$;
+update public.arch_be_searches set kicked_at = now() - interval '1 hour' where id = '00000000-0000-0000-0000-000000000002';
+select pg_temp.t('allowed again later', 'authenticated', :a, :old, 'rows:1');
+update public.arch_be_searches set kicked_at = null, created_at = now() where id = '00000000-0000-0000-0000-000000000002';
+select pg_temp.t('a recent search can''t be kicked', 'authenticated', :a, :old, 'rows:0');
 -- Retention.
 select pg_temp.t('anon can''t purge', 'anon', null, 'select public.purge_be_cache()', 'denied:42501');
 select pg_temp.t('parent can''t purge', 'authenticated', :a, 'select public.purge_be_cache()', 'denied:42501');
