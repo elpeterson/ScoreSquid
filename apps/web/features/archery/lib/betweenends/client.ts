@@ -6,8 +6,8 @@
 // with a minimum gap, conditional requests via ETag so an unchanged event
 // costs a 304, and retries with backoff for Heroku's cold starts.
 //
-// Nothing here looks up an archer: the API can't. Archer views read the index
-// the crawler builds from these calls.
+// Nothing here looks up an archer: the API can't. A search has to read each
+// tournament in its date range.
 
 import type {
   BeEventSummary,
