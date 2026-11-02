@@ -3,6 +3,7 @@
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@scoresquid/auth/server';
+import { findImportedTwin, type ExistingScorecard } from '@/features/archery/lib/betweenends/import-plan';
 
 const arrow = z.enum(['X', '10', '9', '8', '7', '6', '5', '4', '3', '2', '1', 'M']);
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable();
@@ -68,6 +69,24 @@ export async function saveScorecard(
   if (source_path && !source_path.startsWith(`${user.id}/`)) {
     return { error: 'This scorecard has invalid data and was not saved.' };
   }
+
+  // The file hash can't catch the same result imported from a Between Ends search.
+  const { data: imported } = await supabase
+    .from('arch_events')
+    .select('id, name, start_date, session, source, be_event_id, be_aid, be_arrows, rounds:arch_rounds ( round_number, total )')
+    .eq('athlete_id', parsed.data.event.athlete_id)
+    .eq('user_id', user.id)
+    .not('be_event_id', 'is', null);
+  const twin = findImportedTwin(
+    {
+      name: parsed.data.event.name,
+      start_date: parsed.data.event.start_date,
+      session: parsed.data.event.session,
+      totals: parsed.data.rounds.map((r) => r.total),
+    },
+    (imported ?? []) as unknown as ExistingScorecard[],
+  );
+  if (twin) return { duplicate: true };
 
   const { data, error } = await supabase.rpc('import_scorecard', {
     payload: parsed.data,

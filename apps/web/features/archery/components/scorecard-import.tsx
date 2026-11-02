@@ -12,36 +12,18 @@ import {
 import { toast } from 'sonner';
 import { Button } from '@scoresquid/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@scoresquid/ui/components/card';
-import { Input } from '@scoresquid/ui/components/input';
-import { Label } from '@scoresquid/ui/components/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@scoresquid/ui/components/select';
 import { ArrowChip } from '@/features/archery/components/arrow-chip';
 import { cn } from '@scoresquid/ui/lib/utils';
 import { createClient } from '@scoresquid/auth/client';
 import { extractTextItems } from '@/features/archery/lib/scorecard/extract';
 import { parseScorecard } from '@/features/archery/lib/scorecard/parse';
 import type { ParsedScorecard } from '@/features/archery/lib/scorecard/types';
-import { BOW_STYLE_LABELS, parseDivision } from '@/features/archery/lib/division';
+import { defaultSetup, type Setup, type SetupDefaults } from '@/features/archery/lib/betweenends/import-plan';
+import { ScorecardSetupFields } from './scorecard-setup-fields';
 import { formatDate } from '@/features/archery/lib/format';
 import { saveScorecard, type ImportPayload } from '@/app/archery/(main)/import/actions';
 
-export type SetupDefaults = Record<
-  string,
-  { distance_m: number | null; face_cm: number | null }
->;
-
-type Setup = {
-  environment: 'indoor' | 'outdoor';
-  bowStyle: string;
-  distance: string;
-  face: string;
-};
+export type { SetupDefaults };
 
 type Entry = {
   key: string;
@@ -53,8 +35,6 @@ type Entry = {
   eventId?: string;
   message?: string;
 };
-
-const FACES = ['40', '60', '80', '122'];
 
 async function sha256(buffer: ArrayBuffer): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', buffer);
@@ -73,21 +53,6 @@ function loadPdfJs() {
     return pdfjs;
   });
   return pdfjsPromise;
-}
-
-function defaultSetup(card: ParsedScorecard, defaults: SetupDefaults): Setup {
-  // 3-arrow ends are the indoor format; 6-arrow ends are outdoor.
-  const environment = card.arrowsPerEnd === 3 ? 'indoor' : 'outdoor';
-  const bowStyle = parseDivision(card.division).bowStyle ?? '';
-  const remembered = defaults[`${environment}|${bowStyle}`];
-  const distance =
-    remembered?.distance_m ?? (environment === 'indoor' ? 18 : null);
-  return {
-    environment,
-    bowStyle,
-    distance: distance != null ? String(distance) : '',
-    face: remembered?.face_cm != null ? String(remembered.face_cm) : '',
-  };
 }
 
 export function ScorecardImport({
@@ -146,7 +111,7 @@ export function ScorecardImport({
             status: hasErrors ? 'invalid' : 'ready',
             hash,
             card,
-            setup: hasErrors ? undefined : defaultSetup(card, setupDefaults),
+            setup: hasErrors ? undefined : defaultSetup(card.arrowsPerEnd, card.division, setupDefaults),
           });
         } catch (err) {
           update(entry.key, {
@@ -388,73 +353,7 @@ function EntryCard({
                     — not printed on the card; used to compare like with like
                   </span>
                 </p>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Where</Label>
-                    <Select
-                      value={setup.environment}
-                      onValueChange={(v) =>
-                        onSetup({ ...setup, environment: v as Setup['environment'] })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="indoor">Indoor</SelectItem>
-                        <SelectItem value="outdoor">Outdoor</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Bow</Label>
-                    <Select
-                      value={setup.bowStyle}
-                      onValueChange={(v) => onSetup({ ...setup, bowStyle: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Bow style" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(BOW_STYLE_LABELS).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Distance (m)</Label>
-                    <Input
-                      type="number"
-                      inputMode="decimal"
-                      min={1}
-                      className="no-spinners"
-                      value={setup.distance}
-                      placeholder="e.g. 30"
-                      onChange={(e) => onSetup({ ...setup, distance: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Face (cm)</Label>
-                    <Select
-                      value={setup.face}
-                      onValueChange={(v) => onSetup({ ...setup, face: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Face size" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {FACES.map((f) => (
-                          <SelectItem key={f} value={f}>
-                            {f} cm
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                <ScorecardSetupFields setup={setup} onChange={onSetup} />
               </div>
             )}
           </>

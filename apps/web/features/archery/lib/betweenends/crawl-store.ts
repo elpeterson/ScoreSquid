@@ -188,9 +188,14 @@ export function connectCrawlStore(url: string): { store: CrawlStore; close: () =
     async saveMatch(m) {
       await sql`
         insert into public.arch_be_search_matches
-          (search_id, event_id, aid, match_kind, tournament_name, tournament_date, division, total, arrows)
+          (search_id, event_id, aid, match_kind, tournament_name, tournament_date, division, total, arrows,
+           tournament_id, event_type, rounds, ends_per_round, arrows_per_end, scoring_rule, round_totals,
+           division_code, venue, session, target, tournament_end_date)
         values (${m.searchId}, ${m.eventId}, ${m.aid}, ${m.matchKind}, ${m.tournamentName},
-                ${m.tournamentDate}, ${m.division}, ${m.total}, ${m.arrows})
+                ${m.tournamentDate}, ${m.division}, ${m.total}, ${m.arrows},
+                ${m.tournamentId}, ${m.eventType}, ${m.rounds}, ${m.endsPerRound}, ${m.arrowsPerEnd},
+                ${m.scoringRule}, ${m.roundTotals}, ${m.divisionCode}, ${m.venue}, ${m.session},
+                ${m.target}, ${m.tournamentEndDate})
         on conflict (search_id, event_id, aid) do nothing`;
     },
   };
