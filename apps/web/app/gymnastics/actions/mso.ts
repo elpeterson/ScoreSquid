@@ -437,15 +437,19 @@ export async function importMsoMeet(meet: MsoMeetSummary): Promise<ImportResult>
 
 type ReimportContext = NonNullable<Awaited<ReturnType<typeof activeGymnastContext>>>;
 
-/** What MSO says now. Reads from MSO on the server, never from the request. */
+/**
+ * What MSO says now. Everything comes from MSO on the server: no name, level or
+ * date from the request, so a value MSO doesn't supply just isn't offered.
+ */
 async function loadMsoMeet(
   ctx: ReimportContext,
   meet: MsoMeetSummary,
 ): Promise<MsoMeetData | { error: string }> {
   if (meet.meetId) {
     if (!isMsoMeetId(meet.meetId)) return { error: 'Missing meet id' };
-    const athleteId = meet.athleteMsoId || ctx.msoId;
-    if (!athleteId) return { error: 'This gymnast has no MSO Athlete ID set' };
+    // The stored ID wins. The request's only counts for a gymnast with none saved.
+    const athleteId = ctx.msoId || meet.athleteMsoId;
+    if (!isMsoMeetId(athleteId)) return { error: 'This gymnast has no MSO Athlete ID set' };
     const rows = await msoQuery('msoMeet', 'lookup_scores2', {
       LookupIndex: 1,
       p_meetid: meet.meetId,
@@ -453,7 +457,7 @@ async function loadMsoMeet(
     const result = parseMeetResult(rows, athleteId);
     if (!result) return { error: 'Gymnast not found in this meet' };
     return {
-      name: result.meetName || meet.name,
+      name: result.meetName,
       level: result.level,
       division: result.division,
       startDate: result.date,
@@ -462,9 +466,14 @@ async function loadMsoMeet(
       scores: result.scores,
     };
   }
-  const detailsUrl = msoResultsUrl(meet.detailsUrl);
-  if (!detailsUrl) return { error: 'Invalid meet link' };
-  return scrapeMeetDetails(detailsUrl, meet);
+  const meetId = msoMeetIdFromUrl(meet.detailsUrl);
+  if (!meetId) return { error: 'Invalid meet link' };
+  return scrapeMeetDetails(`https://www.meetscoresonline.com/results/${meetId}`, {
+    ...meet,
+    name: '',
+    level: '',
+    dateStr: '',
+  });
 }
 
 /** The parent's saved meet, if it's theirs and linked to this MSO meet. */
