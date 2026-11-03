@@ -24,6 +24,7 @@ import {
 } from '@/app/gymnastics/actions/mso';
 import type { MeetChange } from '@/features/gymnastics/lib/meet-diff';
 import { formatDate } from '@/lib/dates';
+import { monthYearLabel } from '@/features/gymnastics/lib/meet-match';
 import {
   Dialog,
   DialogContent,
@@ -244,7 +245,9 @@ export function ImportView({ initialMsoId }: { initialMsoId?: string | null }) {
                       {meet.name}
                     </h4>
                     <p className="text-sm text-muted-foreground">
-                      Level {meet.level}
+                      {[meet.level && `Level ${meet.level}`, monthYearLabel(meet.dateStr)]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </p>
                   </div>
 
