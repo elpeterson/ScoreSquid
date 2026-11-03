@@ -41,10 +41,18 @@ export async function signIn(page: Page, sport: 'archery' | 'gymnastics', email:
   await page.waitForURL(/\/dashboard/);
 }
 
-/** The page fits the screen: nothing makes it scroll sideways. */
+/**
+ * The page fits the screen: nothing makes it scroll sideways. Checked again for a few
+ * seconds, as charts lay themselves out again a moment after the window is resized;
+ * a page that really overflows still fails.
+ */
 export async function expectNoSidewaysScroll(page: Page) {
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-  expect(overflow, 'the page scrolls sideways').toBeLessThanOrEqual(0);
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), {
+      message: 'the page scrolls sideways',
+      timeout: 5_000,
+    })
+    .toBeLessThanOrEqual(0);
 }
 
 /**
