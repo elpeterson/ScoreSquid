@@ -191,6 +191,30 @@ const RING_OF: Record<Arrow, Ring> = {
   M: 'miss',
 };
 
+/**
+ * Ring shares as percentages to one decimal place that add up to exactly 100.
+ * Rounding each share alone can make a bar total 100.1, which stretches a 0-100 axis
+ * (largest-remainder rounding avoids that).
+ */
+export function ringPercents(shares: RingShares): RingShares {
+  const tenths = RINGS.map((r) => shares[r] * 1000);
+  const out = Object.fromEntries(RINGS.map((r) => [r, 0])) as RingShares;
+  if (tenths.reduce((a, b) => a + b, 0) === 0) return out;
+
+  const floors = tenths.map((t) => Math.floor(t + 1e-9));
+  let left = 1000 - floors.reduce((a, b) => a + b, 0);
+  const byRemainder = tenths
+    .map((t, i) => ({ i, remainder: t - floors[i]! }))
+    .sort((a, b) => b.remainder - a.remainder || a.i - b.i);
+  for (const { i } of byRemainder) {
+    if (left <= 0) break;
+    floors[i]! += 1;
+    left -= 1;
+  }
+  RINGS.forEach((r, i) => (out[r] = floors[i]! / 10));
+  return out;
+}
+
 /** Fraction of arrows landing in each target color (sums to 1). */
 export function ringShares(distribution: Record<Arrow, number>): RingShares {
   const shares = Object.fromEntries(RINGS.map((r) => [r, 0])) as RingShares;

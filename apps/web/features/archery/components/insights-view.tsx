@@ -27,8 +27,8 @@ import {
   SelectValue,
 } from '@scoresquid/ui/components/select';
 import { Tabs, TabsList, TabsTrigger } from '@scoresquid/ui/components/tabs';
-import { RINGS, type SetupGroup, type TrendPoint } from '@/features/archery/lib/stats';
-import { formatDate, formatNumber, formatPercent } from '@/features/archery/lib/format';
+import { RINGS, ringPercents, type SetupGroup, type TrendPoint } from '@/features/archery/lib/stats';
+import { chartDateFormatter, formatDate, formatNumber, formatPercent } from '@/features/archery/lib/format';
 
 const METRICS = {
   arrowAverage: {
@@ -36,24 +36,28 @@ const METRICS = {
     help: 'Points per arrow (0–10). Fair across cards with different arrow counts.',
     format: (v: number) => formatNumber(v),
     domain: [0, 10] as [number, number],
+    ticks: [0, 2, 4, 6, 8, 10],
   },
   percentOfMax: {
     label: '% of max',
     help: 'Score as a share of the best possible score.',
     format: (v: number) => formatPercent(v),
     domain: [0, 1] as [number, number],
+    ticks: [0, 0.25, 0.5, 0.75, 1],
   },
   hitRate: {
     label: 'Hit rate',
     help: 'Share of arrows that scored (not a miss).',
     format: (v: number) => formatPercent(v),
     domain: [0, 1] as [number, number],
+    ticks: [0, 0.25, 0.5, 0.75, 1],
   },
   endStdDev: {
     label: 'Consistency',
     help: 'Spread of end scores. Lower is steadier.',
     format: (v: number) => `±${formatNumber(v, 1)}`,
     domain: [0, 'auto'] as [number, 'auto'],
+    ticks: undefined,
   },
 } as const;
 type Metric = keyof typeof METRICS;
@@ -98,8 +102,9 @@ export function InsightsView({
   const ringData = points.map((p) => ({
     date: p.date,
     name: p.name,
-    ...Object.fromEntries(RINGS.map((r) => [r, Math.round(p.rings[r] * 1000) / 10])),
+    ...ringPercents(p.rings),
   }));
+  const axisDate = chartDateFormatter(points.map((p) => p.date));
 
   // Two-round events: does the archer finish stronger or weaker?
   const twoRound = points.filter((p) => p.roundTotals.length >= 2);
@@ -174,7 +179,7 @@ export function InsightsView({
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis
                   dataKey="date"
-                  tickFormatter={(v) => formatDate(v, true)}
+                  tickFormatter={axisDate}
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
@@ -182,6 +187,7 @@ export function InsightsView({
                 />
                 <YAxis
                   domain={m.domain}
+                  ticks={m.ticks ? [...m.ticks] : undefined}
                   tickFormatter={(v) => m.format(v)}
                   tickLine={false}
                   axisLine={false}
@@ -258,14 +264,17 @@ export function InsightsView({
               <CartesianGrid vertical={false} strokeDasharray="3 3" />
               <XAxis
                 dataKey="date"
-                tickFormatter={(v) => formatDate(v, true)}
+                tickFormatter={axisDate}
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
+                minTickGap={24}
               />
               <YAxis
                 domain={[0, 100]}
-                tickFormatter={(v) => `${v}%`}
+                ticks={[0, 25, 50, 75, 100]}
+                allowDataOverflow
+                tickFormatter={(v) => `${Math.round(v)}%`}
                 tickLine={false}
                 axisLine={false}
                 width={44}
