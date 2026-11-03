@@ -13,7 +13,7 @@ ScoreSquid Gymnastics is the gymnastics side of [ScoreSquid](https://github.com/
 *   **Live Meet Entry:** Enter scores as they happen. Supports incomplete meets and future schedule planning.
 *   **Detailed Scoring:** Track Final Score, Start Value, Placement, and All-Around placement.
 *   **Deep Customization:** Toggle fields (like Start Value) to declutter the UI on small screens.
-*   **Themeable:** Dark Mode support with custom "Sterling Gym" branding.
+*   **Themeable:** Light and dark mode, saved to your account.
 *   **Secure:** Row Level Security (RLS) ensures data privacy — each user sees only their own gymnasts.
 
 ## 📊 Insights
@@ -26,9 +26,6 @@ The **Consistency** view (linked from the dashboard) charts a gymnast's apparatu
 -   **Offline Support:** PWA capabilities for gyms with poor signal.
 -   **Additional Data Sources:** Manual import from scoring sources beyond MeetScoresOnline.
 -   **Media Uploads:** Attach photos of scorecards or screenshots to meets.
-
-## 🐛 Known Issues
--   Dark mode preference is currently stored per-device (local storage), not synced to the user profile.
 
 ## 📖 The Problem
 For parents of competitive gymnasts, tracking progress is a nightmare of fragmentation.
