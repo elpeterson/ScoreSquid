@@ -89,6 +89,55 @@ export async function expectTouchTargets(page: Page) {
   expect(small, 'controls with a tap area under 40 px').toEqual([]);
 }
 
+/** Every tab sits inside its tab bar, so the selected one doesn't stick out of it. */
+export async function expectTabsInsideBars(page: Page) {
+  const outside = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('[role="tab"]'))
+      .filter((tab) => {
+        const bar = tab.closest('[role="tablist"]');
+        if (!bar) return false;
+        const t = tab.getBoundingClientRect();
+        const b = bar.getBoundingClientRect();
+        return t.top < b.top - 0.5 || t.bottom > b.bottom + 0.5;
+      })
+      .map((tab) => ((tab as HTMLElement).innerText || '').trim()),
+  );
+  expect(outside, 'tabs that stick out of their tab bar').toEqual([]);
+}
+
+/** The athlete picker sits in the middle of the header. */
+export async function expectPickerCentred(page: Page) {
+  const header = await page.locator('header').first().boundingBox();
+  const picker = await page.locator('header [role="combobox"]').first().boundingBox();
+  expect(header && picker, 'header and picker are on screen').toBeTruthy();
+  const offset = picker!.x + picker!.width / 2 - (header!.x + header!.width / 2);
+  expect(Math.abs(offset), 'picker distance from the header centre (px)').toBeLessThanOrEqual(2);
+}
+
+/**
+ * The account avatar stands out from the header it sits on: its fill, blended over the
+ * header, has a contrast ratio of at least 1.4 against it (a same-colour fill is 1).
+ */
+export async function expectAvatarVisible(page: Page) {
+  const ratio = await page.evaluate(() => {
+    const rgba = (el: Element) =>
+      (getComputedStyle(el).backgroundColor.match(/[\d.]+/g) ?? []).map(Number);
+    const button = document.querySelector('header [aria-label="Account menu"]');
+    const fill = button?.querySelector('span span');
+    if (!fill) return 0;
+    const [hr, hg, hb] = rgba(document.querySelector('header')!);
+    const [fr, fg, fb, fa = 1] = rgba(fill);
+    const blend = [fr * fa + hr * (1 - fa), fg * fa + hg * (1 - fa), fb * fa + hb * (1 - fa)];
+    const lum = ([r, g, b]: number[]) => {
+      const c = (v: number) => ((v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+      return 0.2126 * c(r) + 0.7152 * c(g) + 0.0722 * c(b);
+    };
+    const [a, b] = [lum(blend), lum([hr, hg, hb])].sort((x, y) => y - x);
+    return (a + 0.05) / (b + 0.05);
+  });
+  expect(ratio, 'avatar contrast against the header').toBeGreaterThanOrEqual(1.4);
+}
+
 type MsoRequest = { path: string; gymnastid?: string };
 
 /**

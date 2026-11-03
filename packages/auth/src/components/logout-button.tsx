@@ -8,7 +8,7 @@ export function LogoutButton() {
   return (
     <button
       onClick={signOut}
-      className="text-sm font-semibold leading-6 hover:text-secondary transition-colors"
+      className="whitespace-nowrap text-sm font-semibold leading-6 hover:text-secondary transition-colors"
     >
       Log out <span aria-hidden="true">&rarr;</span>
     </button>

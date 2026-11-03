@@ -9,14 +9,11 @@ export async function AuthButton() {
   } = await supabase.auth.getUser();
 
   return user ? (
-    <div className="flex items-center gap-4">
-      <span className="text-sm text-gray-700">Hey, {user.email}</span>
-      <LogoutButton />
-    </div>
+    <LogoutButton />
   ) : (
     <Link
       href="/login"
-      className="text-sm font-semibold leading-6 text-gray-900 hover:text-indigo-600"
+      className="whitespace-nowrap text-sm font-semibold leading-6 text-gray-900 hover:text-indigo-600"
     >
       Log in <span aria-hidden="true">&rarr;</span>
     </Link>

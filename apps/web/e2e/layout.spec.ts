@@ -1,4 +1,13 @@
-import { expect, expectNoSidewaysScroll, expectTouchTargets, signIn, test } from './support/app';
+import {
+  expect,
+  expectAvatarVisible,
+  expectNoSidewaysScroll,
+  expectPickerCentred,
+  expectTabsInsideBars,
+  expectTouchTargets,
+  signIn,
+  test,
+} from './support/app';
 import { addArcher, addGymnast, addMeet, arrowTotal, distinctArrows, seedSearch } from './support/seed';
 
 // Every screen at the device's own width and at a small 360 px phone (SQ-043). Long,
@@ -10,9 +19,25 @@ async function checkScreen(page: import('@playwright/test').Page, isMobile: bool
   for (const width of WIDTHS) {
     if (width) await page.setViewportSize({ width, height: own.height });
     await expectNoSidewaysScroll(page);
+    await expectTabsInsideBars(page);
+    if (await page.locator('header [role="combobox"]').count()) {
+      await expectPickerCentred(page);
+      await expectAvatarVisible(page);
+    }
     if (isMobile) await expectTouchTargets(page);
     if (width) await page.setViewportSize(own);
   }
+}
+
+// Signed in, the sport's landing page shows "Go to Dashboard" without scrolling, and
+// "Log out" keeps its arrow on the same line.
+async function expectLandingFits(page: import('@playwright/test').Page) {
+  await page.goto('/');
+  const viewport = page.viewportSize()!;
+  const cta = await page.getByRole('link', { name: 'Go to Dashboard' }).boundingBox();
+  expect(cta!.y + cta!.height, 'Go to Dashboard bottom edge (px)').toBeLessThanOrEqual(viewport.height);
+  const logout = await page.getByRole('button', { name: /Log out/ }).boundingBox();
+  expect(logout!.height, 'Log out button height (px)').toBeLessThan(48);
 }
 
 test('archery screens fit a phone @phone', async ({ page, account, isMobile }) => {
@@ -37,6 +62,7 @@ test('archery screens fit a phone @phone', async ({ page, account, isMobile }) =
   await checkScreen(page, isMobile);
 
   await signIn(page, 'archery', account.email);
+  await expectLandingFits(page);
   await page.goto('/import');
   await checkScreen(page, isMobile); // results listed, with setup fields open
   await page.getByRole('button', { name: /^Import \d+ selected$/ }).click();
@@ -62,6 +88,7 @@ test('gymnastics screens fit a phone @phone', async ({ page, account, isMobile }
   );
   await addMeet(account, gymnast, { name: 'Made Up Invitational', date: '2026-02-01', level: '6' }, { vault: 9 });
   await signIn(page, 'gymnastics', account.email);
+  await expectLandingFits(page);
   for (const path of ['/dashboard', '/import', '/insights', '/scores/new', `/competitions/${meet}/edit`, '/account', '/about']) {
     await page.goto(path);
     await checkScreen(page, isMobile);

@@ -15,7 +15,7 @@ import {
 } from '@scoresquid/ui/components/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@scoresquid/ui/components/avatar';
 import { Button } from '@scoresquid/ui/components/button';
-import { User, LogOut, Moon, Sun, Laptop, Coffee } from 'lucide-react';
+import { User, LogOut, Moon, Sun, Laptop, Coffee, Info } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { useSignOut } from './use-sign-out';
@@ -24,12 +24,15 @@ export function UserNav({
   email,
   updateSetting,
   supportUrl,
+  aboutHref,
 }: {
   email: string | undefined;
   /** The app's settings action; saves the theme to its settings table. */
   updateSetting: (key: 'theme', value: string) => Promise<unknown>;
   /** Where people can choose to support the app, opened in a new tab. Omit to hide it. */
   supportUrl?: string;
+  /** The app's About page. Omit to hide it. */
+  aboutHref?: string;
 }) {
   const signOut = useSignOut();
   const { setTheme } = useTheme();
@@ -47,7 +50,7 @@ export function UserNav({
         <Button variant="ghost" className="relative h-8 w-8 rounded-full" aria-label="Account menu">
           <Avatar className="h-8 w-8">
             <AvatarImage src="" alt={email} />
-            <AvatarFallback className="bg-primary text-primary-foreground">
+            <AvatarFallback className="bg-white/15 text-white ring-1 ring-inset ring-white/40">
               {initials}
             </AvatarFallback>
           </Avatar>
@@ -94,6 +97,15 @@ export function UserNav({
               </DropdownMenuSubContent>
             </DropdownMenuPortal>
           </DropdownMenuSub>
+
+          {aboutHref && (
+            <DropdownMenuItem asChild>
+              <Link href={aboutHref} className="cursor-pointer">
+                <Info className="mr-2 h-4 w-4" />
+                <span>About</span>
+              </Link>
+            </DropdownMenuItem>
+          )}
 
           {supportUrl && (
             <DropdownMenuItem asChild>

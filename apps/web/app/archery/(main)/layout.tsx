@@ -33,8 +33,8 @@ export default async function MainLayout({
   return (
     <div className="min-h-screen bg-background transition-colors duration-300">
       <header className="sticky top-0 z-10 bg-[hsl(158_45%_16%)] border-b border-white/10 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-4 min-w-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 grid grid-cols-[1fr_minmax(0,auto)_1fr] items-center gap-3">
+          <div className="flex items-center">
             <Link
               href="/dashboard"
               className="inline-flex min-h-11 min-w-11 items-center hover:opacity-80 transition-opacity shrink-0"
@@ -43,14 +43,16 @@ export default async function MainLayout({
                 <SportLogo sport="Archery" tone="white" compact />
               </h1>
             </Link>
+          </div>
 
+          <div className="flex min-w-0 justify-center">
             <ArcherSwitcher
               archers={archers ?? []}
               activeArcherId={activeArcherId || undefined}
             />
           </div>
 
-          <div className="flex items-center gap-4 text-white/90">
+          <div className="flex items-center justify-end gap-4 text-white/90">
             <Link
               href="/insights"
               className="text-sm font-medium hover:text-white transition-colors hidden sm:block"

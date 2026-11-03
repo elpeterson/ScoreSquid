@@ -326,16 +326,16 @@ export function InsightsView({
             <thead>
               <tr className="text-xs text-muted-foreground">
                 <th className="py-1 text-left font-medium">Event</th>
-                <th className="py-1 text-right font-medium">Rounds</th>
-                <th className="py-1 text-right font-medium">Score</th>
-                <th className="py-1 text-right font-medium">Avg</th>
-                <th className="py-1 text-right font-medium hidden sm:table-cell">Hits</th>
+                <th className="py-1 pl-3 text-right font-medium">Rounds</th>
+                <th className="py-1 pl-3 text-right font-medium">Score</th>
+                <th className="py-1 pl-3 text-right font-medium">Avg</th>
+                <th className="py-1 pl-3 text-right font-medium hidden sm:table-cell">Hits</th>
               </tr>
             </thead>
             <tbody>
               {[...points].reverse().map((p) => (
                 <tr key={p.eventId} className="border-t">
-                  <td className="py-2 pr-2">
+                  <td className="py-2">
                     <Link href={`${eventHrefPrefix}${p.eventId}`} className="hover:underline">
                       {p.name}
                     </Link>
@@ -343,14 +343,14 @@ export function InsightsView({
                       {formatDate(p.date)}
                     </div>
                   </td>
-                  <td className="py-2 text-right text-muted-foreground">
+                  <td className="py-2 pl-3 text-right whitespace-nowrap text-muted-foreground">
                     {p.roundTotals.join(' / ')}
                   </td>
-                  <td className="py-2 text-right font-medium">
+                  <td className="py-2 pl-3 text-right whitespace-nowrap font-medium">
                     {p.total}
                     <span className="text-muted-foreground">/{p.maxScore}</span>
                   </td>
-                  <td className="py-2 text-right">
+                  <td className="py-2 pl-3 text-right whitespace-nowrap">
                     <span className="inline-flex items-center gap-1">
                       {p.personalBest && (
                         <Trophy className="h-3 w-3 text-secondary" />
@@ -358,7 +358,7 @@ export function InsightsView({
                       {formatNumber(p.arrowAverage)}
                     </span>
                   </td>
-                  <td className="py-2 text-right hidden sm:table-cell">
+                  <td className="py-2 pl-3 text-right whitespace-nowrap hidden sm:table-cell">
                     {formatPercent(p.hitRate)}
                   </td>
                 </tr>
