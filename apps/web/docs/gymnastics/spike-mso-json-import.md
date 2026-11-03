@@ -52,6 +52,9 @@ distinct (level,div) at this meet: (J6,Junior 16) (J7,Junior 17) (SR,Senior)
 - **Olympic-order slots are men's (ARTM).** Women's (ARTW) uses a different slot
   layout; keep the WAG path free-text / discipline-aware, consistent with the
   form change already shipped.
+  *Corrected 2026-11-03 (SQ-042):* women's slots are also Olympic order, for
+  women: `EventScore1` to `4` are vault, bars, beam and floor, and 5 and 6 are
+  empty. See [SQ-042](sq-042/README.md).
 
 ## Conclusion
 
