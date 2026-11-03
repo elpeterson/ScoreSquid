@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@scoresquid/auth/server';
 import Link from 'next/link';
+import { SportLogo } from '@/features/shared/sport-logo';
 import { UserNav } from '@scoresquid/auth/components/user-nav';
 import { updateSetting } from '@/app/gymnastics/actions/settings';
 import { GymnastSwitcher } from '@/features/gymnastics/components/gymnast-switcher';
@@ -37,11 +38,8 @@ export default async function MainLayout({
               href="/dashboard"
               className="hover:opacity-80 transition-opacity"
             >
-              <h1 className="text-xl font-bold text-white tracking-wide cursor-pointer hidden md:block">
-                ScoreSquid Gymnastics
-              </h1>
-              <h1 className="text-xl font-bold text-white tracking-wide cursor-pointer md:hidden">
-                Gym
+              <h1 className="text-xl font-bold text-white tracking-wide cursor-pointer">
+                <SportLogo sport="Gymnastics" tone="white" compact />
               </h1>
             </Link>
 
