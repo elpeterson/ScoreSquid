@@ -49,10 +49,10 @@ export default async function InsightsPage() {
     <div className="space-y-6 pb-10">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Consistency</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Insights</h2>
           <p className="text-sm text-muted-foreground">
-            {gymnast?.name ?? 'This gymnast'}&rsquo;s scores across the season,
-            by division.
+            {gymnast?.name ?? 'This gymnast'}&rsquo;s bests and trends at one
+            level and division at a time.
           </p>
         </div>
         <Button asChild variant="outline">
