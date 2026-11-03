@@ -6,7 +6,7 @@ ScoreSquid Gymnastics is the gymnastics side of [ScoreSquid](https://github.com/
 
 ## 🚀 Features
 *   **Multi-Gymnast Support:** Track scores for multiple children (siblings) under one parent account.
-*   **MAG & WAG Support:** Score entry, editing and Insights for both Men's and Women's artistic gymnastics. Women's MSO import brings in scores but saves the level with the meet's age group, and re-importing a women's meet doesn't work yet (see [SQ-042](sq-042/README.md)).
+*   **MAG & WAG Support:** Score entry, editing and Insights for both Men's and Women's artistic gymnastics. Women's levels are typed freely, so a typed level (e.g. "Gold") may not group with MSO's code for it ("XG") in Insights (see [SQ-042](sq-042/README.md)).
 *   **MeetScoresOnline Integration:** Import a gymnast's full meet history from MeetScoresOnline using an MSO Athlete ID — capturing per-apparatus scores and all-around. Men's import uses MSO's JSON API and also captures each meet's level & division; women's reads MSO's results pages.
 *   **Consistency Insights:** A per-apparatus line graph of a gymnast's scores across the season, filtered by level and division so non-comparable groups are never mixed (see [Insights](#-insights)).
 *   **Structured Levels & Divisions (Men's):** Level and division are captured as structured fields mirroring the values used in competition — numeric levels 3–10 with Division 1/2, plus Elite/Junior/Senior tracks and elite codes. Women's keeps flexible free-text entry.

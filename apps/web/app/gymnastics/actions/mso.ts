@@ -6,7 +6,7 @@ import { ensureActiveGymnast } from './gymnast';
 import { isMsoAthleteId, isValidMsoSummary } from '@/features/gymnastics/lib/meet-form';
 import { isUuid } from '@/lib/validation';
 import { MSO_ORIGIN, outboundOrigin } from '@/lib/outbound';
-import { parseMeetDates, msoResultsUrl } from '@/features/gymnastics/lib/mso-parser';
+import { msoListLevel, parseMeetDates, msoResultsUrl } from '@/features/gymnastics/lib/mso-parser';
 import { parseMeetListHtml, parseResultsHtml } from '@/features/gymnastics/lib/mso-scrape';
 import { insertCompetitionWithScores } from '@/features/gymnastics/lib/competitions';
 import {
@@ -189,7 +189,7 @@ async function scrapeMeetDetails(
   const { allAroundPlace, scores } = page;
   return {
     name: page.name || meet.name,
-    level: meet.level || null,
+    level: msoListLevel(meet.level),
     division: null,
     startDate,
     endDate,

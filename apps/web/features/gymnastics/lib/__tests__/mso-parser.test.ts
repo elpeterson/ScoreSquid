@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseScoreRow, parseMeetDates, APPARATUS_MAP, msoResultsUrl } from '../mso-parser';
+import { parseScoreRow, parseMeetDates, APPARATUS_MAP, msoResultsUrl, msoListLevel } from '../mso-parser';
 
 describe('APPARATUS_MAP', () => {
   it('maps common MAG display names to db ids', () => {
@@ -120,5 +120,25 @@ describe('msoResultsUrl', () => {
     expect(msoResultsUrl('https://www.meetscoresonline.com/Account/Settings')).toBeNull();
     expect(msoResultsUrl('/results/1')).toBeNull();
     expect(msoResultsUrl('not a url')).toBeNull();
+  });
+});
+
+describe('msoListLevel', () => {
+  it("keeps only the level from a women's list cell", () => {
+    expect(msoListLevel('6 Group 2 (opens meet scores)')).toBe('6');
+    expect(msoListLevel('XG Penny (opens meet scores)')).toBe('XG');
+    expect(msoListLevel('10 JR B')).toBe('10');
+    expect(msoListLevel('XSA')).toBe('XSA');
+  });
+
+  it("keeps a men's packed level whole", () => {
+    expect(msoListLevel('4D1 Child B (opens meet scores)')).toBe('4D1');
+  });
+
+  it('gives null when there is no level', () => {
+    expect(msoListLevel('')).toBeNull();
+    expect(msoListLevel('  (opens meet scores) ')).toBeNull();
+    expect(msoListLevel(null)).toBeNull();
+    expect(msoListLevel(undefined)).toBeNull();
   });
 });

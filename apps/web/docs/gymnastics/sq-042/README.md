@@ -7,6 +7,9 @@ results pages with and without the athlete, `lookup_gymnast` for both siblings a
 `lookup_scores2` for two meets. The app's own parsing code ran over the saved
 responses. No responses, IDs or names are kept in the repo.
 
+**Status:** finding 1 is fixed (SQ-048) and finding 2 is fixed (SQ-049, with a
+migration that cleans levels already saved). Findings 3 and 4 are SQ-050 and SQ-051.
+
 ## How women's import works today
 - Women's (`WAG`) uses the HTML scrape for both the meet list and the import, never
   the JSON API (`fetchMsoMeetsApi` in `app/gymnastics/actions/mso.ts`).

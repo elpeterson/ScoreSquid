@@ -63,10 +63,13 @@ test("a women's meet keeps its MSO ID, so it re-imports, and an older import is 
   await expect(meet.getByText('Imported')).toBeVisible();
   const { data: imported } = await account.db
     .from('gym_competitions')
-    .select('id, mso_meet_id, start_date, all_around_place, scores:gym_scores(apparatus, value)')
+    .select('id, mso_meet_id, level, division, start_date, all_around_place, scores:gym_scores(apparatus, value)')
     .eq('name', '2026 Sample Snowflake Classic')
     .single();
   expect(imported!.mso_meet_id).toBe('90001');
+  // Just the level: the list cell's age group and screen-reader label are dropped (SQ-049).
+  expect(imported!.level).toBe('6');
+  expect(imported!.division).toBeNull();
   expect(imported!.start_date).toBe('2026-02-13');
   expect(imported!.all_around_place).toBe(4);
   expect(Object.fromEntries(imported!.scores.map((s) => [s.apparatus, s.value]))).toEqual({

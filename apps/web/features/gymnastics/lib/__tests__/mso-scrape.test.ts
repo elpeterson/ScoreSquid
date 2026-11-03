@@ -24,6 +24,16 @@ describe('parseMeetListHtml (women\'s athlete page)', () => {
     expect(meets.map((m) => msoMeetIdFromUrl(m.href))).toEqual(['90001', '90002']);
   });
 
+  it('keeps only the level, not the age group or the screen-reader label (SQ-049)', () => {
+    expect(meets.map((m) => m.level)).toEqual(['6', 'XG']);
+  });
+
+  it('reads the level from the cell text when there is no level span', () => {
+    const html =
+      '<table><tr><td>Made Up Meet</td><td>Gym</td><td><a href="/results/1/2">4 Junior (opens meet scores)</a></td></tr></table>';
+    expect(parseMeetListHtml(html)[0].level).toBe('4');
+  });
+
   it('finds nothing on a page without results links', () => {
     expect(parseMeetListHtml('<html><body><p>No athlete</p></body></html>')).toEqual([]);
   });
