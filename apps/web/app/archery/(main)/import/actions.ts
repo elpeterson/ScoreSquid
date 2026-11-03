@@ -11,41 +11,43 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable();
 const ImportSchema = z.object({
   event: z.object({
     athlete_id: z.string().uuid(),
-    name: z.string().min(1),
-    venue: z.string().nullable(),
+    name: z.string().trim().min(1).max(200),
+    venue: z.string().max(200).nullable(),
     start_date: isoDate,
     end_date: isoDate,
     shot_on: isoDate,
-    session: z.string().nullable(),
-    target: z.string().nullable(),
-    division: z.string().nullable(),
-    bow_style: z.string().nullable(),
+    session: z.string().max(200).nullable(),
+    target: z.string().max(50).nullable(),
+    division: z.string().max(50).nullable(),
+    bow_style: z.string().max(50).nullable(),
     environment: z.enum(['indoor', 'outdoor']),
-    distance_m: z.number().positive().nullable(),
-    face_cm: z.number().int().positive().nullable(),
+    distance_m: z.number().positive().max(1000).nullable(),
+    face_cm: z.number().int().positive().max(500).nullable(),
     arrows_per_end: z.number().int().min(1).max(12),
-    bonus_labels: z.array(z.string()),
-    source_path: z.string().nullable(),
+    bonus_labels: z.array(z.string().max(20)).max(5),
+    source_path: z.string().max(500).nullable(),
     source_hash: z.string().regex(/^[0-9a-f]{64}$/),
-    name_on_card: z.string().nullable(),
+    name_on_card: z.string().max(200).nullable(),
   }),
   rounds: z
     .array(
       z.object({
-        round_number: z.number().int().positive(),
-        total: z.number().int().min(0),
-        bonus: z.array(z.number().int().min(0)),
+        round_number: z.number().int().positive().max(50),
+        total: z.number().int().min(0).max(100000),
+        bonus: z.array(z.number().int().min(0).max(10000)).max(5),
         ends: z
           .array(
             z.object({
-              end_number: z.number().int().positive(),
-              arrows: z.array(arrow).min(1),
+              end_number: z.number().int().positive().max(1000),
+              arrows: z.array(arrow).min(1).max(12),
             }),
           )
-          .min(1),
+          .min(1)
+          .max(1000),
       }),
     )
-    .min(1),
+    .min(1)
+    .max(50),
 });
 
 export type ImportPayload = z.infer<typeof ImportSchema>;

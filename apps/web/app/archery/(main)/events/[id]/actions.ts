@@ -10,8 +10,8 @@ const EventId = z.string().uuid();
 const SetupSchema = z.object({
   environment: z.enum(['indoor', 'outdoor']),
   bow_style: z.string().min(1).max(50).nullable(),
-  distance_m: z.number().positive().nullable(),
-  face_cm: z.number().int().positive().nullable(),
+  distance_m: z.number().positive().max(1000).nullable(),
+  face_cm: z.number().int().positive().max(500).nullable(),
 });
 
 export async function updateEventSetup(

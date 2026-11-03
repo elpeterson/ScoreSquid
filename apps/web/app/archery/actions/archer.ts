@@ -6,12 +6,13 @@ import { deleteProfileWithFiles } from '@scoresquid/auth/profile';
 import { createClient } from '@scoresquid/auth/server';
 import { revalidatePath } from 'next/cache';
 import { latestStartDate, parseArcherDetails } from '@/features/archery/lib/archer-profile';
+import { isUuid } from '@/lib/validation';
 
 const COOKIE_NAME = 'scoresquid_active_archer';
 
 export async function setActiveArcher(archerId: string) {
   const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, archerId);
+  if (isUuid(archerId)) cookieStore.set(COOKIE_NAME, archerId);
   redirect('/dashboard');
 }
 
@@ -29,7 +30,7 @@ export async function ensureActiveArcher() {
 
   const currentId = await getActiveArcherId();
 
-  if (currentId) {
+  if (isUuid(currentId)) {
     const { data: valid } = await supabase
       .from('archer_athletes')
       .select('id')
@@ -109,6 +110,7 @@ export async function createArcher(formData: FormData): Promise<SaveResult> {
 }
 
 export async function updateArcher(id: string, formData: FormData): Promise<SaveResult> {
+  if (!isUuid(id)) return { error: 'Failed to update this archer.' };
   const supabase = await createClient();
   const {
     data: { user },
@@ -136,6 +138,7 @@ export async function updateArcher(id: string, formData: FormData): Promise<Save
 }
 
 export async function deleteArcher(id: string) {
+  if (!isUuid(id)) return { error: 'Archer not found' };
   const supabase = await createClient();
   const {
     data: { user },

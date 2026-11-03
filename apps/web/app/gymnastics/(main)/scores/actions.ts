@@ -4,10 +4,13 @@ import { createClient } from '@scoresquid/auth/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { ensureActiveGymnast } from '@/app/gymnastics/actions/gymnast';
-import { MAG_APPARATUS, WAG_APPARATUS } from '@/features/gymnastics/lib/constants';
 import { insertCompetitionWithScores } from '@/features/gymnastics/lib/competitions';
+import { apparatusFor, parseMeetForm } from '@/features/gymnastics/lib/meet-form';
+import { isUuid } from '@/lib/validation';
 
-export async function createScore(formData: FormData) {
+type ActionResult = { error?: string; success?: boolean };
+
+export async function createScore(formData: FormData): Promise<ActionResult> {
   const supabase = await createClient();
 
   const {
@@ -20,55 +23,25 @@ export async function createScore(formData: FormData) {
     return { error: 'No gymnast profile found. Please create one first.' };
   }
 
-  const name = formData.get('name') as string;
-  const level = (formData.get('level') as string) || null;
-  const division = (formData.get('division') as string) || null;
-  const discipline = formData.get('discipline') as string;
+  const { data: gymnast } = await supabase
+    .from('gymnast_athletes')
+    .select('discipline')
+    .eq('id', gymnastId)
+    .eq('user_id', user.id)
+    .single();
+  if (!gymnast) return { error: 'No gymnast profile found. Please create one first.' };
 
-  const showStartValue = formData.get('show_start_value') === 'true';
-  const showPlace = formData.get('show_place') === 'true';
-
-  const rawAAPlace = formData.get('all_around_place');
-  const allAroundPlace = rawAAPlace ? parseInt(rawAAPlace.toString()) : null;
-
-  const rawStartDate = formData.get('start_date') as string;
-  const rawEndDate = formData.get('end_date') as string;
-  const startDate = rawStartDate ? rawStartDate : null;
-  const endDate = rawEndDate ? rawEndDate : null;
-
-  const apparatusList =
-    discipline === 'WAG'
-      ? WAG_APPARATUS.map((a) => a.id)
-      : MAG_APPARATUS.map((a) => a.id);
-
-  const scoreInserts = apparatusList.map((app) => {
-    const rawValue = formData.get(app);
-    const rawPlace = formData.get(`${app}_place`);
-    const rawStartValue = formData.get(`${app}_sv`);
-
-    return {
-      apparatus: app,
-      value: rawValue ? parseFloat(rawValue.toString()) : null,
-      place: rawPlace ? parseInt(rawPlace.toString()) : null,
-      start_value: rawStartValue ? parseFloat(rawStartValue.toString()) : null,
-    };
-  });
+  const parsed = parseMeetForm(formData, apparatusFor(gymnast.discipline));
+  if ('error' in parsed) return parsed;
 
   const inserted = await insertCompetitionWithScores(
     supabase,
     {
       user_id: user.id,
       athlete_id: gymnastId,
-      name: name,
-      start_date: startDate,
-      end_date: endDate,
-      level: level,
-      division: division,
-      all_around_place: allAroundPlace,
-      show_start_value: showStartValue,
-      show_place: showPlace,
+      ...parsed.meet,
     },
-    scoreInserts,
+    parsed.scores,
   );
 
   if (inserted.error === 'competition') return { error: 'Failed to create competition record.' };
@@ -78,7 +51,8 @@ export async function createScore(formData: FormData) {
   return { success: true };
 }
 
-export async function deleteCompetition(id: string) {
+export async function deleteCompetition(id: string): Promise<ActionResult> {
+  if (!isUuid(id)) return { error: 'Failed to delete competition.' };
   const supabase = await createClient();
 
   const {
@@ -100,7 +74,8 @@ export async function deleteCompetition(id: string) {
   return { success: true };
 }
 
-export async function updateCompetition(id: string, formData: FormData) {
+export async function updateCompetition(id: string, formData: FormData): Promise<ActionResult> {
+  if (!isUuid(id)) return { error: 'Failed to update competition details.' };
   const supabase = await createClient();
   const {
     data: { user },
@@ -108,52 +83,38 @@ export async function updateCompetition(id: string, formData: FormData) {
 
   if (!user) redirect('/login');
 
-  const name = formData.get('name') as string;
-  const level = (formData.get('level') as string) || null;
-  const division = (formData.get('division') as string) || null;
-  const discipline = formData.get('discipline') as string;
+  const { data: competition } = await supabase
+    .from('gym_competitions')
+    .select('athlete_id')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single();
+  if (!competition) return { error: 'Failed to update competition details.' };
 
-  const showStartValue = formData.get('show_start_value') === 'true';
-  const showPlace = formData.get('show_place') === 'true';
+  const { data: gymnast } = await supabase
+    .from('gymnast_athletes')
+    .select('discipline')
+    .eq('id', competition.athlete_id)
+    .eq('user_id', user.id)
+    .single();
+  if (!gymnast) return { error: 'Failed to update competition details.' };
 
-  const rawAAPlace = formData.get('all_around_place');
-  const allAroundPlace = rawAAPlace ? parseInt(rawAAPlace.toString()) : null;
+  const parsed = parseMeetForm(formData, apparatusFor(gymnast.discipline));
+  if ('error' in parsed) return parsed;
 
-  const rawStartDate = formData.get('start_date') as string;
-  const rawEndDate = formData.get('end_date') as string;
-  const startDate = rawStartDate ? rawStartDate : null;
-  const endDate = rawEndDate ? rawEndDate : null;
-
+  const updatedAt = new Date().toISOString();
   const { error: compError } = await supabase
     .from('gym_competitions')
-    .update({
-      name,
-      start_date: startDate,
-      end_date: endDate,
-      level,
-      division,
-      all_around_place: allAroundPlace,
-      show_start_value: showStartValue,
-      show_place: showPlace,
-      updated_at: new Date().toISOString(),
-    })
+    .update({ ...parsed.meet, updated_at: updatedAt })
     .eq('id', id)
     .eq('user_id', user.id);
 
   if (compError) return { error: 'Failed to update competition details.' };
 
-  const apparatusList =
-    discipline === 'WAG'
-      ? WAG_APPARATUS.map((a) => a.id)
-      : MAG_APPARATUS.map((a) => a.id);
-
-  const scoreUpserts = apparatusList.map((app) => ({
+  const scoreUpserts = parsed.scores.map((score) => ({
+    ...score,
     competition_id: id,
-    apparatus: app,
-    value: formData.get(app) ? parseFloat(formData.get(app)!.toString()) : null,
-    place: formData.get(`${app}_place`) ? parseInt(formData.get(`${app}_place`)!.toString()) : null,
-    start_value: formData.get(`${app}_sv`) ? parseFloat(formData.get(`${app}_sv`)!.toString()) : null,
-    updated_at: new Date().toISOString(),
+    updated_at: updatedAt,
   }));
 
   const { error: scoresError } = await supabase
