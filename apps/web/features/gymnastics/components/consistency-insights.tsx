@@ -27,9 +27,11 @@ import {
   levelHasDivisions,
   listDivisions,
   listLevels,
+  summarizeGroup,
   type CompetitionRow,
 } from '@/features/gymnastics/lib/insights';
 import { ConsistencyChart } from '@/features/gymnastics/components/consistency-chart';
+import { InsightsSummary } from '@/features/gymnastics/components/insights-summary';
 
 interface ConsistencyInsightsProps {
   competitions: CompetitionRow[];
@@ -82,6 +84,8 @@ export function ConsistencyInsights({
     [competitions, level, division, showDivision, apparatusIds]
   );
 
+  const summary = useMemo(() => summarizeGroup(rows, apparatusIds), [rows, apparatusIds]);
+
   const drawn = useMemo(() => {
     const withData = new Set(apparatusWithData(rows, apparatusIds));
     return apparatusConfig.filter((a) => withData.has(a.id));
@@ -102,68 +106,68 @@ export function ConsistencyInsights({
   }
 
   return (
-    <Card>
-      <CardHeader className="gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <CardTitle>Season scores</CardTitle>
-          <CardDescription>
-            One line per apparatus across the season. Levels and divisions are
-            shown separately — their scores are not comparable.
-          </CardDescription>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Level</span>
+          <Select value={level} onValueChange={handleLevelChange}>
+            <SelectTrigger className="w-[130px]" aria-label="Level">
+              <SelectValue placeholder="Level" />
+            </SelectTrigger>
+            <SelectContent>
+              {levels.map((l) => (
+                <SelectItem key={l.value} value={l.value}>
+                  {levelLabel(l.value)}
+                  <span className="ml-1 text-muted-foreground">
+                    ({l.count})
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        {showDivision && (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Level</span>
-            <Select value={level} onValueChange={handleLevelChange}>
-              <SelectTrigger className="w-[130px]">
-                <SelectValue placeholder="Level" />
+            <span className="text-sm text-muted-foreground">Division</span>
+            <Select value={division ?? ''} onValueChange={setDivision}>
+              <SelectTrigger className="w-[150px]" aria-label="Division">
+                <SelectValue placeholder="Division" />
               </SelectTrigger>
               <SelectContent>
-                {levels.map((l) => (
-                  <SelectItem key={l.value} value={l.value}>
-                    {levelLabel(l.value)}
+                {divisions.map((d) => (
+                  <SelectItem key={d.value} value={d.value}>
+                    {divisionLabel(d.value)}
                     <span className="ml-1 text-muted-foreground">
-                      ({l.count})
+                      ({d.count})
                     </span>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          {showDivision && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Division</span>
-              <Select
-                value={division ?? ''}
-                onValueChange={setDivision}
-              >
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Division" />
-                </SelectTrigger>
-                <SelectContent>
-                  {divisions.map((d) => (
-                    <SelectItem key={d.value} value={d.value}>
-                      {divisionLabel(d.value)}
-                      <span className="ml-1 text-muted-foreground">
-                        ({d.count})
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
-        {drawn.length === 0 ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">
-            No apparatus scores recorded for this selection yet.
-          </p>
-        ) : (
-          <ConsistencyChart data={rows} apparatus={drawn} />
         )}
-      </CardContent>
-    </Card>
+        <p className="basis-full text-xs text-muted-foreground">
+          Levels and divisions are shown separately; their scores are not comparable.
+        </p>
+      </div>
+
+      <InsightsSummary summary={summary} apparatus={apparatusConfig} />
+
+      <Card>
+        <CardHeader className="space-y-1">
+          <CardTitle>Consistency</CardTitle>
+          <CardDescription>One line per apparatus, meet by meet.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {drawn.length === 0 ? (
+            <p className="py-12 text-center text-sm text-muted-foreground">
+              No apparatus scores recorded for this selection yet.
+            </p>
+          ) : (
+            <ConsistencyChart data={rows} apparatus={drawn} />
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

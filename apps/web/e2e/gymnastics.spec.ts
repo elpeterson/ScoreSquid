@@ -163,9 +163,30 @@ test('a parent sees Insights and deletes a meet', async ({ page, account }) => {
   await page.goto('/insights');
   await expect(page.locator('.recharts-surface').first()).toBeVisible();
 
+  // SQ-041: bests, summary, and only the men's apparatus.
+  await expect(page.getByRole('heading', { name: 'Personal bests' })).toBeVisible();
+  await expect(page.getByText('12.600', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('Needs a meet with every event scored')).toBeVisible();
+  const floor = page.getByRole('row', { name: /^Floor/ });
+  await expect(floor.getByRole('cell').last()).toHaveText('+0.50');
+  await expect(page.getByText('Beam', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Most consistent')).toBeVisible();
+
   await page.goto('/dashboard');
   await page.getByRole('button', { name: 'Open menu' }).first().click();
   await page.getByRole('menuitem', { name: /delete/i }).click();
   await page.getByRole('alertdialog').getByRole('button', { name: /delete/i }).click();
   await expect(page.getByText(/Made Up Meet [AB]/)).toHaveCount(1);
+});
+
+test('Insights shows a lone meet and asks for a second (SQ-041) @phone', async ({ page, account }) => {
+  const gymnast = await addGymnast(account, 'Riley Madeup', 'WAG', MSO_ID);
+  await addMeet(account, gymnast, { name: 'Made Up Meet C', date: '2025-03-01', level: '5' }, { vault: 9.1, uneven_bars: 8.8, balance_beam: 9.25, floor_exercise: 9.0 });
+  await signIn(page, 'gymnastics', account.email);
+  await page.goto('/insights');
+  await expect(page.getByText(/Comparisons need a second meet/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Scores', exact: true })).toBeVisible();
+  await expect(page.getByText('36.150', { exact: true })).toBeVisible();
+  await expect(page.getByText('Summary', { exact: true })).toHaveCount(0);
+  await expectNoSidewaysScroll(page);
 });

@@ -167,3 +167,174 @@ export function apparatusWithData(
     rows.some((r) => typeof r[id] === 'number')
   );
 }
+
+// ---------------------------------------------------------------------------
+// Summary cards (SQ-041): personal bests, the group's summary, and the strongest
+// and steadiest apparatus. Everything is worked out from one group's rows, as
+// `buildSeries` returns them (oldest first, unscored apparatus as null), so two
+// levels or divisions are never combined and a "not scored" value never counts.
+
+/** The best score on one apparatus (or the all-around), and where it came from. */
+export type BestScore = {
+  value: number;
+  competitionId: string;
+  competitionName: string;
+  date: string | null;
+};
+
+/** One line of the summary: an apparatus, or the all-around. */
+export type ScoreSummary = {
+  /** Meets with a score here. */
+  meets: number;
+  average: number | null;
+  high: number | null;
+  /** Current best; on a tie the earlier meet keeps it (as in SQ-033). */
+  best: BestScore | null;
+  /** Latest score minus the first, in points; null with fewer than two scores. */
+  change: number | null;
+};
+
+export type ApparatusSummary = ScoreSummary & {
+  apparatus: string;
+  /** Standard deviation of the scores; null with fewer than `MIN_STEADY_SCORES`. */
+  spread: number | null;
+};
+
+export type GroupSummary = {
+  /** Meets in the group with at least one apparatus scored. */
+  scoredMeets: number;
+  /** One entry per requested apparatus, in the order given. */
+  apparatus: ApparatusSummary[];
+  /** Built only from meets where every requested apparatus was scored. */
+  allAround: ScoreSummary;
+  /** Highest average; null with fewer than two scored meets. */
+  strongest: ApparatusSummary | null;
+  /** Lowest spread among apparatus with at least `MIN_STEADY_SCORES`; null if none. */
+  steadiest: ApparatusSummary | null;
+};
+
+/** Scores an apparatus needs before it can be called the steadiest. */
+export const MIN_STEADY_SCORES = 3;
+
+/** Round to the thousandth, the precision gymnastics scores are given in. */
+function round3(n: number): number {
+  return Math.round(n * 1000) / 1000;
+}
+
+type Point = { value: number; row: ChartRow };
+
+function summarize(points: Point[]): ScoreSummary {
+  if (points.length === 0) {
+    return { meets: 0, average: null, high: null, best: null, change: null };
+  }
+  let best = points[0];
+  let total = 0;
+  for (const p of points) {
+    total += p.value;
+    if (p.value > best.value) best = p; // strictly greater: the earlier meet keeps a tie
+  }
+  const first = points[0];
+  const latest = points[points.length - 1];
+  return {
+    meets: points.length,
+    average: round3(total / points.length),
+    high: best.value,
+    best: {
+      value: best.value,
+      competitionId: best.row.competitionId,
+      competitionName: best.row.competitionName,
+      date: best.row.date,
+    },
+    change: points.length >= 2 ? round3(latest.value - first.value) : null,
+  };
+}
+
+/** Population standard deviation, or null with fewer than `MIN_STEADY_SCORES` values. */
+export function spreadOf(values: number[]): number | null {
+  if (values.length < MIN_STEADY_SCORES) return null;
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const variance = values.reduce((a, v) => a + (v - mean) ** 2, 0) / values.length;
+  return round3(Math.sqrt(variance));
+}
+
+function scoreAt(row: ChartRow, id: string): number | null {
+  const v = row[id];
+  return typeof v === 'number' && Number.isFinite(v) ? v : null;
+}
+
+/**
+ * The summary cards for one group's rows. Pass the rows from `buildSeries` (so
+ * they are one level and division, oldest first) and the discipline's apparatus;
+ * any other apparatus in the data is ignored.
+ */
+export function summarizeGroup(rows: ChartRow[], apparatusIds: string[]): GroupSummary {
+  const apparatus: ApparatusSummary[] = apparatusIds.map((id) => {
+    const points: Point[] = [];
+    for (const row of rows) {
+      const value = scoreAt(row, id);
+      if (value !== null) points.push({ value, row });
+    }
+    return {
+      apparatus: id,
+      ...summarize(points),
+      spread: spreadOf(points.map((p) => p.value)),
+    };
+  });
+
+  const scoredMeets = rows.filter((row) =>
+    apparatusIds.some((id) => scoreAt(row, id) !== null)
+  ).length;
+
+  // Only a meet with every apparatus scored has an all-around, so a partial meet
+  // can neither set nor lower the best.
+  const allAroundPoints: Point[] = [];
+  if (apparatusIds.length > 0) {
+    for (const row of rows) {
+      const values = apparatusIds.map((id) => scoreAt(row, id));
+      if (values.every((v) => v !== null)) {
+        allAroundPoints.push({
+          value: round3((values as number[]).reduce((a, b) => a + b, 0)),
+          row,
+        });
+      }
+    }
+  }
+
+  const withScores = apparatus.filter((a) => a.average !== null);
+  let strongest: ApparatusSummary | null = null;
+  if (scoredMeets >= 2) {
+    for (const a of withScores) {
+      if (!strongest || (a.average as number) > (strongest.average as number)) strongest = a;
+    }
+  }
+  let steadiest: ApparatusSummary | null = null;
+  for (const a of withScores) {
+    if (a.spread === null) continue;
+    if (!steadiest || a.spread < (steadiest.spread as number)) steadiest = a;
+  }
+
+  return {
+    scoredMeets,
+    apparatus,
+    allAround: summarize(allAroundPoints),
+    strongest,
+    steadiest,
+  };
+}
+
+/** A score as gymnastics shows it, to the thousandth: `9.150`. */
+export function formatScore(value: number | null): string {
+  return value === null ? '—' : value.toFixed(3);
+}
+
+/**
+ * A change in points with its sign: `+0.45`, `-0.125`, `0.00`. Two decimals,
+ * or three when the thousandth matters.
+ */
+export function formatChange(value: number | null): string {
+  if (value === null) return '—';
+  const rounded = round3(value);
+  if (rounded === 0) return '0.00';
+  const digits = Math.round(Math.abs(rounded) * 1000) % 10 === 0 ? 2 : 3;
+  return `${rounded > 0 ? '+' : '-'}${Math.abs(rounded).toFixed(digits)}`;
+}
