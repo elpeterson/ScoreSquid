@@ -22,6 +22,7 @@ export default async function InsightsPage() {
   }
 
   const activeGymnastId = await ensureActiveGymnast();
+  if (!activeGymnastId) redirect('/dashboard');
 
   const { data: gymnast } = await supabase
     .from('gymnast_athletes')
