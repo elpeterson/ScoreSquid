@@ -9,6 +9,7 @@
     "lint": {},
     "typecheck": {},
     "test": {},
+    "test:coverage": {},
     "dev": { "cache": false, "persistent": true }
   }
 }
