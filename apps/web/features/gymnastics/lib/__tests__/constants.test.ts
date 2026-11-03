@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   MAG_APPARATUS,
   WAG_APPARATUS,
+  WAG_LEVEL_OPTIONS,
+  levelLabel,
   ALL_APPARATUS,
   COMPETITIONS_PAGE_SIZE,
 } from '../constants';
@@ -79,5 +81,37 @@ describe('COMPETITIONS_PAGE_SIZE', () => {
   it('is a positive integer', () => {
     expect(COMPETITIONS_PAGE_SIZE).toBeGreaterThan(0);
     expect(Number.isInteger(COMPETITIONS_PAGE_SIZE)).toBe(true);
+  });
+});
+
+describe('WAG_LEVEL_OPTIONS', () => {
+  it("offers levels 1-10 and the Xcel divisions, as MSO's codes", () => {
+    expect(WAG_LEVEL_OPTIONS.map((o) => o.value)).toEqual([
+      '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'XB', 'XS', 'XG', 'XP', 'XD', 'XSA',
+    ]);
+  });
+});
+
+describe('levelLabel', () => {
+  it('names numeric levels', () => {
+    expect(levelLabel('4')).toBe('Level 4');
+    expect(levelLabel('10')).toBe('Level 10');
+  });
+
+  it('names Xcel codes', () => {
+    expect(levelLabel('XG')).toBe('Xcel Gold');
+    expect(levelLabel('XSA')).toBe('Xcel Sapphire');
+  });
+
+  it("names men's elite and special codes as before", () => {
+    expect(levelLabel('SR')).toBe('Senior');
+    expect(levelLabel('J6')).toBe('Junior 6');
+  });
+
+  it('shows anything else as it is', () => {
+    expect(levelLabel('Gold')).toBe('Gold');
+    expect(levelLabel('Level 4')).toBe('Level 4');
+    expect(levelLabel('Unspecified')).toBe('Unspecified');
+    expect(levelLabel(null)).toBe('');
   });
 });

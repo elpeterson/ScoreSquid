@@ -129,6 +129,32 @@ test("a hand-entered women's meet fills from MSO, and a wrong suggestion is reme
   });
 });
 
+test("a women's level is picked from MSO's list, and an older typed level is kept (SQ-051) @phone", async ({ page, account }) => {
+  const gymnast = await addGymnast(account, 'Riley Madeup', 'WAG', '5550001');
+  // Typed before there was a list.
+  const older = await addMeet(account, gymnast, { name: 'Typed Level Meet', date: '2025-01-10', level: 'Gold' }, { vault: 9 });
+  await signIn(page, 'gymnastics', account.email);
+
+  await page.goto('/scores/new');
+  await page.getByLabel('Competition Name').fill('Made Up Xcel Meet');
+  await page.getByRole('combobox', { name: 'Level (Optional)' }).click();
+  await page.getByRole('option', { name: 'Xcel Gold' }).click();
+  await page.locator('#vault').fill('9.2');
+  await page.getByRole('button', { name: 'Save Scores' }).click();
+  await expect(page).toHaveURL(/\/dashboard/);
+  await expect(page.getByText('Xcel Gold')).toBeVisible();
+  const { data: picked } = await account.db.from('gym_competitions').select('level').eq('name', 'Made Up Xcel Meet').single();
+  expect(picked!.level, "stored as MSO's code, so it groups with imported meets").toBe('XG');
+
+  await page.goto(`/competitions/${older}/edit`);
+  await expect(page.getByRole('combobox', { name: 'Level (Optional)' })).toHaveText('Gold');
+  await page.getByRole('button', { name: 'Update Scores' }).click();
+  await expect(page).toHaveURL(/\/dashboard/);
+  const { data: kept } = await account.db.from('gym_competitions').select('level').eq('id', older).single();
+  expect(kept!.level).toBe('Gold');
+  await expectNoSidewaysScroll(page);
+});
+
 test('a parent sees Insights and deletes a meet', async ({ page, account }) => {
   const gymnast = await addGymnast(account, 'Sam Madeup', 'MAG', MSO_ID);
   await addMeet(account, gymnast, { name: 'Made Up Meet A', date: '2025-01-10', level: '4', division: '1' }, { floor_exercise: 12.1, vault: 12.4 });

@@ -61,6 +61,33 @@ export function qualifierForLevel(level: string): {
   return { label: 'Division', options: [] };
 }
 
+// Women's levels as MSO stores them: Development Program levels 1-10 as the bare
+// number, and Xcel divisions as MSO's codes, so typed and imported meets match.
+export const WAG_LEVEL_OPTIONS: { value: string; label: string }[] = [
+  ...Array.from({ length: 10 }, (_, i) => ({ value: String(i + 1), label: `Level ${i + 1}` })),
+  { value: 'XB', label: 'Xcel Bronze' },
+  { value: 'XS', label: 'Xcel Silver' },
+  { value: 'XG', label: 'Xcel Gold' },
+  { value: 'XP', label: 'Xcel Platinum' },
+  { value: 'XD', label: 'Xcel Diamond' },
+  { value: 'XSA', label: 'Xcel Sapphire' },
+];
+
+/**
+ * How a stored level reads: `4` is "Level 4", `XG` is "Xcel Gold", `SR` is "Senior".
+ * Men's and women's codes don't overlap, so one lookup serves both. Anything else,
+ * such as a level a parent typed, shows as it is.
+ */
+export function levelLabel(level: string | null | undefined): string {
+  const value = level?.trim() ?? '';
+  if (/^\d+$/.test(value)) return `Level ${value}`;
+  return (
+    ELITE_LEVEL_OPTIONS.find((o) => o.value === value)?.label ??
+    WAG_LEVEL_OPTIONS.find((o) => o.value === value)?.label ??
+    value
+  );
+}
+
 export const ALL_APPARATUS = [
   ...MAG_APPARATUS,
   { id: 'uneven_bars', label: 'Bars' },
