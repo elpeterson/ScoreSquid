@@ -44,7 +44,7 @@ export default async function AboutPage() {
             </p>
             <p>
               At the end of the day all of this here is <strong>your</strong>{' '}
-              data and it belongs to you. All the code is public{' '}
+              data and it belongs to you. All the code is free and public{' '}
               <a href="https://github.com/elpeterson/ScoreSquid" className="underline">
                 on GitHub
               </a>
