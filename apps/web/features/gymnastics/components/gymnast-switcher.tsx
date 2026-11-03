@@ -82,10 +82,10 @@ export function GymnastSwitcher({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-[200px] justify-between bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+            className="w-[200px] min-w-0 shrink justify-between bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
           >
             <User className="mr-2 h-4 w-4 shrink-0 opacity-70" />
-            {selectedGymnast?.name || 'Select Gymnast'}
+            <span className="truncate">{selectedGymnast?.name || 'Select Gymnast'}</span>
             <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-70" />
           </Button>
         </PopoverTrigger>

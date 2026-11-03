@@ -4,6 +4,33 @@
 // `theme.extend` across presets.
 import animate from 'tailwindcss-animate';
 import typography from '@tailwindcss/typography';
+import plugin from 'tailwindcss/plugin';
+
+// On touch screens, controls get a tap area of about 44 px (Apple's and Google's
+// guidance) without changing how they look with a mouse. Checkboxes, switches and
+// radios keep their size: they're tapped through their labels.
+const CONTROLS = [
+  'button:not([role="checkbox"]):not([role="switch"]):not([role="radio"])',
+  '[role="tab"]',
+  '[role="combobox"]',
+  '[role="menuitem"]',
+  '[role="option"]',
+  'select',
+  'input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]):not([type="range"])',
+  // Links styled as buttons (Button asChild), not links in running text.
+  'a.inline-flex',
+].join(', ');
+
+const touchTargets = plugin(({ addBase }) => {
+  addBase({
+    '@media (pointer: coarse)': {
+      [CONTROLS]: { minHeight: '2.75rem' },
+      // Icon-only buttons are named for screen readers, by aria-label or an sr-only label.
+      'button[aria-label], button:has(> .sr-only)': { minWidth: '2.75rem' },
+      '[role="tablist"]': { height: 'auto' },
+    },
+  });
+});
 
 /** @type {Omit<import('tailwindcss').Config, 'content'>} */
 const preset = {
@@ -59,7 +86,7 @@ const preset = {
       },
     },
   },
-  plugins: [animate, typography],
+  plugins: [animate, typography, touchTargets],
 };
 
 export default preset;

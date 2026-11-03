@@ -32,11 +32,11 @@ export default async function MainLayout({
   return (
     <div className="min-h-screen bg-background transition-colors duration-300">
       <header className="sticky top-0 z-10 bg-[#262161] border-b border-white/10 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-4 min-w-0">
             <Link
               href="/dashboard"
-              className="hover:opacity-80 transition-opacity"
+              className="inline-flex min-h-11 min-w-11 items-center hover:opacity-80 transition-opacity"
             >
               <h1 className="text-xl font-bold text-white tracking-wide cursor-pointer">
                 <SportLogo sport="Gymnastics" tone="white" compact />
@@ -51,10 +51,10 @@ export default async function MainLayout({
             )}
           </div>
 
-          <div className="flex items-center gap-4 text-white/90">
+          <div className="flex items-center gap-3 shrink-0 text-white/90">
             <Link
               href="/about"
-              className="text-sm font-medium hover:text-white transition-colors"
+              className="inline-flex min-h-11 items-center text-sm font-medium hover:text-white transition-colors"
             >
               About
             </Link>

@@ -21,5 +21,5 @@ The config reads the stack's URL and keys from `supabase status`, starts the MSO
 - **MSO:** `stubs/mso.mjs` serves the made-up unit-test fixtures for Athlete ID `1001`. The app reaches it through `E2E_MSO_ORIGIN`, which `lib/outbound.ts` accepts only for a loopback address and never on Vercel.
 - **Between Ends:** searches are seeded as the crawler would leave them (`support/seed.ts`), so no test runs the crawler or reads Between Ends.
 - **PDFs:** `support/pdf.ts` writes a scorecard PDF from a text fixture, so no real scorecard is committed.
-- **Devices:** every test runs on desktop Chrome. Tests tagged `@phone` also run on Pixel 7 (Chromium) and iPhone 15 Pro (WebKit) and check that the page doesn't scroll sideways.
-- **Known failures:** `knownFailureOn('iphone', 'SQ-043')` marks a failure that a story will fix. When it's fixed, Playwright reports the test as unexpectedly passing; remove the mark then.
+- **Devices:** every test runs on desktop Chrome. Tests tagged `@phone` also run on Pixel 7 (Chromium) and iPhone 15 Pro (WebKit) and check that the page doesn't scroll sideways. `layout.spec.ts` visits every screen at the phone's own width and at 360 px, and on a touch screen checks each control has a tap area of at least 40 px.
+- **Known failures:** `knownFailureOn('iphone', 'SQ-0xx')` marks a failure that a story will fix. When it's fixed, Playwright reports the test as unexpectedly passing; remove the mark then.

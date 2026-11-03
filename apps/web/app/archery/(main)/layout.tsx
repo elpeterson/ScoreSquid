@@ -36,7 +36,7 @@ export default async function MainLayout({
           <div className="flex items-center gap-4 min-w-0">
             <Link
               href="/dashboard"
-              className="hover:opacity-80 transition-opacity shrink-0"
+              className="inline-flex min-h-11 min-w-11 items-center hover:opacity-80 transition-opacity shrink-0"
             >
               <h1 className="text-xl font-bold text-white tracking-wide cursor-pointer">
                 <SportLogo sport="Archery" tone="white" compact />

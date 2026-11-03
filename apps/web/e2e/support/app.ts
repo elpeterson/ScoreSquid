@@ -60,6 +60,27 @@ export async function waitForToasts(page: Page) {
   await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, { timeout: 15_000 });
 }
 
+/**
+ * On a touch screen, every control offers a tap area of at least 40 px each way. Links
+ * in running text, and checkboxes, radios and switches (tapped through their labels),
+ * are left out.
+ */
+export async function expectTouchTargets(page: Page) {
+  const small = await page.evaluate(() => {
+    const controls = document.querySelectorAll(
+      'button:not([role="checkbox"]):not([role="switch"]):not([role="radio"]), [role="tab"], [role="combobox"], a.inline-flex, header a, select, input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"])',
+    );
+    return Array.from(controls)
+      .filter((el) => {
+        const box = el.getBoundingClientRect();
+        if (box.width === 0 || box.height === 0) return false;
+        return box.width < 40 || box.height < 40;
+      })
+      .map((el) => `${el.tagName.toLowerCase()} "${((el as HTMLElement).innerText || el.getAttribute('aria-label') || '').trim().slice(0, 30)}"`);
+  });
+  expect(small, 'controls with a tap area under 40 px').toEqual([]);
+}
+
 /** How many requests the MSO stand-in has had. */
 export async function msoRequestCount(): Promise<number> {
   const res = await fetch(`${MSO_STAND_IN}/__requests`);

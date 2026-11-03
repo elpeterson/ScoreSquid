@@ -1,12 +1,10 @@
-import { expect, expectNoSidewaysScroll, knownFailureOn, msoRequestCount, signIn, test, waitForToasts } from './support/app';
+import { expect, expectNoSidewaysScroll, msoRequestCount, signIn, test, waitForToasts } from './support/app';
 import { addGymnast, addMeet } from './support/seed';
 
 // The MSO stand-in serves the made-up unit-test fixtures for Athlete ID 1001.
 const MSO_ID = '1001';
 
 test('a parent adds a gymnast @phone', async ({ page, account }) => {
-  // The dashboard's title and buttons don't wrap at 393 px, so the page scrolls 79 px sideways.
-  knownFailureOn('iphone', 'SQ-043');
   await signIn(page, 'gymnastics', account.email);
   await page.getByRole('combobox').first().click();
   await page.getByText(/Add Gymnast/i).first().click();

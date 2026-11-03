@@ -75,7 +75,6 @@ export function ImportView({ initialMsoId }: { initialMsoId?: string | null }) {
   const handleImport = async (meet: MsoMeetSummary) => {
     if (importingIds.has(meet.id)) return;
     setImportingIds((prev) => new Set(prev).add(meet.id));
-    toast.info(`Importing ${meet.name}...`);
 
     const result = await importMsoMeet(meet);
     setImportingIds((prev) => {

@@ -110,7 +110,7 @@ export default async function Dashboard() {
                   <CardContent className="p-4 sm:p-5 flex items-center gap-4">
                     <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold truncate">{event.name}</h3>
+                        <h3 className="font-semibold line-clamp-2 break-words sm:truncate">{event.name}</h3>
                         {pb && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-secondary/20 px-2 py-0.5 text-[11px] font-medium text-foreground">
                             <Trophy className="h-3 w-3" /> PB
