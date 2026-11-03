@@ -11,7 +11,8 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "e2e": "npm run e2e -w web"
   },
   "devDependencies": {
     "semantic-release": "^24.2.9",
