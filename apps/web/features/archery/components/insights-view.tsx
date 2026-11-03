@@ -27,8 +27,8 @@ import {
   SelectValue,
 } from '@scoresquid/ui/components/select';
 import { Tabs, TabsList, TabsTrigger } from '@scoresquid/ui/components/tabs';
-import { RINGS, type SetupGroup, type TrendPoint } from '@/features/archery/lib/stats';
-import { formatDate, formatNumber, formatPercent } from '@/features/archery/lib/format';
+import { RINGS, ringPercents, type SetupGroup, type TrendPoint } from '@/features/archery/lib/stats';
+import { chartDateFormatter, formatDate, formatNumber, formatPercent } from '@/features/archery/lib/format';
 
 const METRICS = {
   arrowAverage: {
@@ -98,8 +98,9 @@ export function InsightsView({
   const ringData = points.map((p) => ({
     date: p.date,
     name: p.name,
-    ...Object.fromEntries(RINGS.map((r) => [r, Math.round(p.rings[r] * 1000) / 10])),
+    ...ringPercents(p.rings),
   }));
+  const axisDate = chartDateFormatter(points.map((p) => p.date));
 
   // Two-round events: does the archer finish stronger or weaker?
   const twoRound = points.filter((p) => p.roundTotals.length >= 2);
@@ -174,7 +175,7 @@ export function InsightsView({
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis
                   dataKey="date"
-                  tickFormatter={(v) => formatDate(v, true)}
+                  tickFormatter={axisDate}
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
@@ -258,14 +259,17 @@ export function InsightsView({
               <CartesianGrid vertical={false} strokeDasharray="3 3" />
               <XAxis
                 dataKey="date"
-                tickFormatter={(v) => formatDate(v, true)}
+                tickFormatter={axisDate}
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
+                minTickGap={24}
               />
               <YAxis
                 domain={[0, 100]}
-                tickFormatter={(v) => `${v}%`}
+                ticks={[0, 25, 50, 75, 100]}
+                allowDataOverflow
+                tickFormatter={(v) => `${Math.round(v)}%`}
                 tickLine={false}
                 axisLine={false}
                 width={44}

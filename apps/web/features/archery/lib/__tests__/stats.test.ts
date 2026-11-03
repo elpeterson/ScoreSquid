@@ -8,6 +8,7 @@ import {
   setupGroups,
   setupKey,
   setupLabel,
+  ringPercents,
   trendForSetup,
   type EventRow,
 } from '@/features/archery/lib/stats';
@@ -176,3 +177,28 @@ function fromFixtureShape(id: string, date: string, arrows: string[]) {
     rounds: [{ round_number: 1, total: 0, ends: [{ end_number: 1, arrows }] }],
   };
 }
+
+describe('ringPercents', () => {
+  const shares = (gold: number, red: number, blue: number, black = 0, white = 0, miss = 0) => ({ gold, red, blue, black, white, miss });
+
+  const tenths = (p: Record<string, number>) => Object.values(p).reduce((a, v) => a + Math.round(v * 10), 0);
+
+  it('adds up to exactly 100 where rounding each alone would not', () => {
+    const split = shares(0.6875, 0.1875, 0.0625, 0.0625);
+    // The old rounding: 68.8 + 18.8 + 6.3 + 6.3 = 100.2, which stretched the axis.
+    expect(Object.values(split).reduce((a, v) => a + Math.round(v * 1000), 0)).toBe(1002);
+    expect(tenths(ringPercents(split))).toBe(1000);
+    expect(tenths(ringPercents(shares(1 / 3, 1 / 3, 1 / 3)))).toBe(1000);
+  });
+
+  it('keeps one decimal place and leaves exact shares alone', () => {
+    expect(ringPercents(shares(0.5, 0.25, 0.25))).toMatchObject({ gold: 50, red: 25, blue: 25, miss: 0 });
+    for (const v of Object.values(ringPercents(shares(1 / 3, 1 / 3, 1 / 3)))) {
+      expect(Math.round(v * 10)).toBeCloseTo(v * 10, 9);
+    }
+  });
+
+  it('is all zero with no arrows', () => {
+    expect(Object.values(ringPercents(shares(0, 0, 0)))).toEqual([0, 0, 0, 0, 0, 0]);
+  });
+});
