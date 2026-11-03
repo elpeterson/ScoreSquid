@@ -102,9 +102,9 @@ export function extractRows(
 // Domain mapping (pure — unit tested against captured fixtures)
 // ---------------------------------------------------------------------------
 
-// Numbered apparatus slots are positional in Olympic order. Men's artistic
-// (EventType ARTM) is the supported case; women's (ARTW) uses a different
-// layout and is intentionally left to the existing free-text/scrape path.
+// Numbered apparatus slots are positional in Olympic order. Only men's artistic
+// (EventType ARTM) is mapped here; women's (ARTW) is imported by the scrape.
+// ARTW slots 1-4 are vault, bars, beam and floor (checked in SQ-042).
 const ARTM_SLOTS: Record<number, string> = {
   1: 'floor_exercise',
   2: 'pommel_horse',
