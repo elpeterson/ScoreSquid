@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useEffect, useCallback } from 'react';
+import { useState, useTransition, useCallback } from 'react';
 import { Button } from '@scoresquid/ui/components/button';
 import {
   Card,
@@ -71,12 +71,6 @@ export function ImportView({ initialMsoId }: { initialMsoId?: string | null }) {
       }
     });
   }, []);
-
-  useEffect(() => {
-    if (initialMsoId) {
-      handleSync(initialMsoId);
-    }
-  }, [initialMsoId, handleSync]);
 
   const handleImport = async (meet: MsoMeetSummary) => {
     if (importingIds.has(meet.id)) return;
@@ -210,7 +204,7 @@ export function ImportView({ initialMsoId }: { initialMsoId?: string | null }) {
         <CardHeader>
           <CardTitle>Sync Configuration</CardTitle>
           <CardDescription>
-            Enter your Athlete ID to fetch meets from MeetScoresOnline.com
+            Enter your Athlete ID, then press Sync Meets to find meets on MeetScoresOnline.com
           </CardDescription>
         </CardHeader>
         <CardContent className="flex gap-4 items-end">
