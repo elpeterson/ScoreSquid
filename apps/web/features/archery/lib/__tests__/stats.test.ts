@@ -4,6 +4,7 @@ import path from 'node:path';
 import { parseScorecard } from '@/features/archery/lib/scorecard/parse';
 import {
   computeEventStats,
+  isComparable,
   setupGroups,
   setupKey,
   setupLabel,
@@ -131,3 +132,47 @@ describe('parseDivision', () => {
     });
   });
 });
+
+describe('isComparable', () => {
+  const end = (n: number, arrows = ['X', '9', '8']) => ({ end_number: n, arrows });
+  const event = (rounds: { round_number: number; total: number; ends: ReturnType<typeof end>[] }[], be_arrows?: string) => ({
+    arrows_per_end: 3,
+    be_arrows,
+    rounds,
+  });
+  const round = (n: number, ends: ReturnType<typeof end>[]) => ({ round_number: n, total: 0, ends });
+
+  it('accepts rounds shot in full', () => {
+    expect(isComparable(event([round(1, [end(1), end(2)]), round(2, [end(1), end(2)])]))).toBe(true);
+  });
+  it('leaves out arrows not stored', () => {
+    expect(isComparable(event([round(1, [])]))).toBe(false);
+    expect(isComparable(event([]))).toBe(false);
+  });
+  it('leaves out a short end, a missing end, and a shorter round', () => {
+    expect(isComparable(event([round(1, [end(1), end(2, ['X'])])]))).toBe(false);
+    expect(isComparable(event([round(1, [end(1), end(3)])]))).toBe(false);
+    expect(isComparable(event([round(1, [end(1), end(2)]), round(2, [end(1)])]))).toBe(false);
+  });
+  it('leaves out a result Between Ends says has arrows not shot', () => {
+    expect(isComparable(event([round(1, [end(1)])], 'X98EEE'))).toBe(false);
+    expect(isComparable(event([round(1, [end(1)])], 'X98'))).toBe(true);
+  });
+  it('accepts ends stored out of order', () => {
+    expect(isComparable(event([round(1, [end(2), end(1)])]))).toBe(true);
+  });
+  it("can't let a part-shot round set a personal best once left out", () => {
+    const full = { ...fromFixtureShape('a', '2026-01-01', ['8', '8', '8']) };
+    const partial = { ...fromFixtureShape('b', '2026-02-01', ['X', 'X', 'X']), rounds: [round(1, [end(1, ['X', 'X', 'X']), end(2, ['X'])])] };
+    const fair = [full, partial].filter(isComparable);
+    expect(trendForSetup(fair, setupKey(full)).map((p) => p.eventId)).toEqual(['a']);
+  });
+});
+
+function fromFixtureShape(id: string, date: string, arrows: string[]) {
+  return {
+    id, name: id, shot_on: date, start_date: date, bow_style: 'recurve', environment: 'indoor',
+    distance_m: 18, face_cm: 40, arrows_per_end: 3,
+    rounds: [{ round_number: 1, total: 0, ends: [{ end_number: 1, arrows }] }],
+  };
+}

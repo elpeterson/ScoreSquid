@@ -6,7 +6,7 @@ import type { EventRow } from './stats';
 export const EVENT_SELECT = `
   id, name, venue, start_date, end_date, shot_on, session, target, division,
   bow_style, environment, distance_m, face_cm, arrows_per_end, bonus_labels,
-  source, source_path, name_on_card, created_at,
+  source, source_path, name_on_card, created_at, be_arrows,
   rounds:arch_rounds ( round_number, total, bonus, ends:arch_ends ( end_number, arrows ) )
 `;
 
