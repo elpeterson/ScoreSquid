@@ -36,24 +36,28 @@ const METRICS = {
     help: 'Points per arrow (0–10). Fair across cards with different arrow counts.',
     format: (v: number) => formatNumber(v),
     domain: [0, 10] as [number, number],
+    ticks: [0, 2, 4, 6, 8, 10],
   },
   percentOfMax: {
     label: '% of max',
     help: 'Score as a share of the best possible score.',
     format: (v: number) => formatPercent(v),
     domain: [0, 1] as [number, number],
+    ticks: [0, 0.25, 0.5, 0.75, 1],
   },
   hitRate: {
     label: 'Hit rate',
     help: 'Share of arrows that scored (not a miss).',
     format: (v: number) => formatPercent(v),
     domain: [0, 1] as [number, number],
+    ticks: [0, 0.25, 0.5, 0.75, 1],
   },
   endStdDev: {
     label: 'Consistency',
     help: 'Spread of end scores. Lower is steadier.',
     format: (v: number) => `±${formatNumber(v, 1)}`,
     domain: [0, 'auto'] as [number, 'auto'],
+    ticks: undefined,
   },
 } as const;
 type Metric = keyof typeof METRICS;
@@ -183,6 +187,7 @@ export function InsightsView({
                 />
                 <YAxis
                   domain={m.domain}
+                  ticks={m.ticks ? [...m.ticks] : undefined}
                   tickFormatter={(v) => m.format(v)}
                   tickLine={false}
                   axisLine={false}
