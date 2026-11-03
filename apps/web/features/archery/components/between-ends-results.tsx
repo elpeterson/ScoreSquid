@@ -9,7 +9,13 @@ import {
   type BeResult,
   type ImportOutcome,
 } from '@/app/archery/actions/between-ends';
-import { defaultSetup, type Setup, type SetupDefaults } from '@/features/archery/lib/betweenends/import-plan';
+import {
+  defaultSetup,
+  IMPORT_BATCH_SIZE,
+  importBatches,
+  type Setup,
+  type SetupDefaults,
+} from '@/features/archery/lib/betweenends/import-plan';
 import { formatDate } from '@/lib/dates';
 import { ScorecardSetupFields } from './scorecard-setup-fields';
 
@@ -34,6 +40,7 @@ export function BetweenEndsResults({
   const [setups, setSetups] = useState<Record<string, Setup>>({});
   const [outcomes, setOutcomes] = useState<Record<string, ImportOutcome>>({});
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [pending, startTransition] = useTransition();
 
   const ticked = (r: BeResult) => canTick(r) && (ticks[r.key] ?? startsTicked(r));
@@ -44,33 +51,60 @@ export function BetweenEndsResults({
   const numberResults = results.filter((r) => r.match_kind === 'number');
   const possible = results.filter((r) => r.match_kind === 'name');
 
+  const importItem = (r: BeResult) => {
+    const s = setupFor(r);
+    const distance = Number(s.distance);
+    const face = Number(s.face);
+    return {
+      event_id: r.event_id,
+      aid: r.aid,
+      confirmed: true,
+      setup: {
+        environment: s.environment,
+        bow_style: s.bowStyle || null,
+        distance_m: distance > 0 ? distance : null,
+        face_cm: Number.isInteger(face) && face > 0 ? face : null,
+      },
+    };
+  };
+
+  // Sent in batches the action accepts, one after another, so any number can be imported.
   const importChosen = () =>
     startTransition(async () => {
       setError(null);
-      const { error: failed, outcomes: done } = await importBeResults({
-        athleteId,
-        items: chosen.map((r) => {
-          const s = setupFor(r);
-          const distance = Number(s.distance);
-          const face = Number(s.face);
-          return {
-            event_id: r.event_id,
-            aid: r.aid,
-            confirmed: true,
-            setup: {
-              environment: s.environment,
-              bow_style: s.bowStyle || null,
-              distance_m: distance > 0 ? distance : null,
-              face_cm: Number.isInteger(face) && face > 0 ? face : null,
-            },
-          };
-        }),
-      });
-      if (failed) setError(failed);
-      setOutcomes(Object.fromEntries((done ?? []).map((o) => [o.key, o])));
-      setTicks({});
+      setOutcomes({});
+      const batches = importBatches(chosen, (r) => r.match_kind === 'name');
+      const all: Record<string, ImportOutcome> = {};
+      let sent = 0;
+      setProgress({ done: 0, total: chosen.length });
+      try {
+        for (const batch of batches) {
+          const { error: failed, outcomes: done } = await importBeResults({ athleteId, items: batch.map(importItem) });
+          if (failed) {
+            setError(failed);
+            break;
+          }
+          for (const o of done ?? []) all[o.key] = o;
+          sent += batch.length;
+          setOutcomes({ ...all });
+          setProgress({ done: sent, total: chosen.length });
+        }
+      } catch {
+        setError('The connection was lost partway. Results already saved show as imported; import the rest again.');
+      }
+      setProgress(null);
+      // Anything not saved stays ticked, so it can be tried again.
+      setTicks(Object.fromEntries(chosen.filter((r) => all[r.key]?.status !== 'saved').map((r) => [r.key, true])));
       await onChanged();
     });
+
+  // Select all leaves possible matches alone: each has to be chosen as this archer.
+  const tickAll = (on: boolean) =>
+    setTicks({
+      ...ticks,
+      ...Object.fromEntries(results.filter((r) => canTick(r) && (!on || r.match_kind === 'number')).map((r) => [r.key, on])),
+    });
+  const tickableCount = results.filter(canTick).length;
 
   const resolve = (r: BeResult, choice: 'accept' | 'keep') =>
     startTransition(async () => {
@@ -101,7 +135,19 @@ export function BetweenEndsResults({
     <div className="space-y-4">
       {numberResults.length > 0 && (
         <section aria-label="Tournaments found" className="space-y-2">
-          <h3 className="text-sm font-semibold">Tournaments found</h3>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold">Tournaments found</h3>
+            {tickableCount > 1 && (
+              <div className="flex gap-1">
+                <Button size="sm" variant="ghost" disabled={pending} onClick={() => tickAll(true)}>
+                  Select all
+                </Button>
+                <Button size="sm" variant="ghost" disabled={pending} onClick={() => tickAll(false)}>
+                  Select none
+                </Button>
+              </div>
+            )}
+          </div>
           <ul className="divide-y rounded-md border">{numberResults.map(row)}</ul>
         </section>
       )}
@@ -122,13 +168,19 @@ export function BetweenEndsResults({
       )}
       {results.some(canTick) && (
         <div className="flex flex-wrap items-center gap-3">
-          <Button onClick={importChosen} disabled={pending || chosen.length === 0 || chosen.length > 25}>
-            {pending ? 'Importing…' : `Import ${chosen.length} selected`}
+          <Button onClick={importChosen} disabled={pending || chosen.length === 0}>
+            {progress
+              ? `Importing… ${progress.done} of ${progress.total} done`
+              : pending
+                ? 'Importing…'
+                : `Import ${chosen.length} selected`}
           </Button>
-          <p className="text-xs text-muted-foreground">
-            {chosen.length > 25
-              ? 'Import up to 25 at a time.'
-              : `Each becomes a scorecard for ${archerName}, with every arrow.`}
+          <p className="text-xs text-muted-foreground" aria-live="polite">
+            {progress
+              ? 'Keep this page open until the import finishes.'
+              : chosen.length > IMPORT_BATCH_SIZE
+                ? `Each becomes a scorecard for ${archerName}. They're saved ${IMPORT_BATCH_SIZE} at a time, so keep this page open.`
+                : `Each becomes a scorecard for ${archerName}, with every arrow.`}
           </p>
         </div>
       )}

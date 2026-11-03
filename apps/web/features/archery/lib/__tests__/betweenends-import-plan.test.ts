@@ -4,6 +4,7 @@ import {
   defaultSetup,
   dropRepeatedCombined,
   findImportedTwin,
+  importBatches,
   importProblem,
   planRounds,
   relateToExisting,
@@ -222,5 +223,33 @@ describe('collapseRepeats', () => {
   it('matches a PDF from any listed tournament', () => {
     const [found] = collapseRepeats([copy(221), copy(306, { tournament_name: 'Made Up Final', tournament_date: '2026-03-05' })]);
     expect(relateToExisting(found!, [pdf({ name: 'Made Up Final', start_date: '2026-03-05' })]).kind).toBe('imported-pdf');
+  });
+});
+
+describe('importBatches', () => {
+  const ids = (n: number, from = 0) => Array.from({ length: n }, (_, i) => i + from);
+
+  it('splits 60 results into calls of 25, 25 and 10, in order', () => {
+    const batches = importBatches(ids(60), () => false);
+    expect(batches.map((b) => b.length)).toEqual([25, 25, 10]);
+    expect(batches.flat()).toEqual(ids(60));
+  });
+
+  it('sends a short list in one call', () => {
+    expect(importBatches(ids(3), () => false)).toEqual([[0, 1, 2]]);
+    expect(importBatches([], () => false)).toEqual([]);
+  });
+
+  it('puts no more than 5 possible matches in a call', () => {
+    const batches = importBatches(ids(12), () => true);
+    expect(batches.map((b) => b.length)).toEqual([5, 5, 2]);
+  });
+
+  it('fills a call with certain results around the possible matches', () => {
+    const possible = (n: number) => n >= 100;
+    const batches = importBatches([...ids(7, 100), ...ids(20)], possible);
+    expect(batches[0]!.filter(possible)).toHaveLength(5);
+    expect(batches[0]).toHaveLength(25);
+    expect(batches.flat().sort((a, b) => a - b)).toEqual([...ids(20), ...ids(7, 100)]);
   });
 });

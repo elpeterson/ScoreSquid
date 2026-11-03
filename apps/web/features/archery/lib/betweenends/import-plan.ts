@@ -237,6 +237,32 @@ export function collapseRepeats<T extends RepeatFields & MatchListing>(matches: 
   }));
 }
 
+/** Results per import call, which keeps each call well inside the function time limit. */
+export const IMPORT_BATCH_SIZE = 25;
+/** Possible matches per import call: confirming one reads Between Ends live. */
+export const MAX_CONFIRMED_PER_IMPORT = 5;
+
+/**
+ * Splits chosen results into calls the import action accepts, in order, with no more
+ * than `size` results or `maxPossible` possible matches in any one.
+ */
+export function importBatches<T>(
+  items: T[],
+  isPossibleMatch: (item: T) => boolean,
+  size = IMPORT_BATCH_SIZE,
+  maxPossible = MAX_CONFIRMED_PER_IMPORT,
+): T[][] {
+  const batches: { items: T[]; possible: number }[] = [];
+  for (const item of items) {
+    const possible = isPossibleMatch(item);
+    let batch = batches.find((b) => b.items.length < size && (!possible || b.possible < maxPossible));
+    if (!batch) batches.push((batch = { items: [], possible: 0 }));
+    batch.items.push(item);
+    if (possible) batch.possible++;
+  }
+  return batches.map((b) => b.items);
+}
+
 export type SetupDefaults = Record<string, { distance_m: number | null; face_cm: number | null }>;
 export type Setup = { environment: 'indoor' | 'outdoor'; bowStyle: string; distance: string; face: string };
 
