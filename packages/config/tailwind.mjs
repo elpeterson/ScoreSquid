@@ -27,7 +27,9 @@ const touchTargets = plugin(({ addBase }) => {
       [CONTROLS]: { minHeight: '2.75rem' },
       // Icon-only buttons are named for screen readers, by aria-label or an sr-only label.
       'button[aria-label], button:has(> .sr-only)': { minWidth: '2.75rem' },
-      '[role="tablist"]': { height: 'auto' },
+      // Doubled to outrank the list's own height utility (h-9), which Tailwind emits
+      // after base styles with the same specificity.
+      '[role="tablist"][role="tablist"]': { height: 'auto' },
     },
   });
 });

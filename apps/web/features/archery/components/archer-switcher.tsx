@@ -81,7 +81,7 @@ export function ArcherSwitcher({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-[200px] min-w-0 shrink justify-between bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+            className="w-[200px] max-w-full justify-between bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
           >
             <User className="mr-2 h-4 w-4 shrink-0 opacity-70" />
             <span className="truncate">

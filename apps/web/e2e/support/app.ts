@@ -89,6 +89,31 @@ export async function expectTouchTargets(page: Page) {
   expect(small, 'controls with a tap area under 40 px').toEqual([]);
 }
 
+/** Every tab sits inside its tab bar, so the selected one doesn't stick out of it. */
+export async function expectTabsInsideBars(page: Page) {
+  const outside = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('[role="tab"]'))
+      .filter((tab) => {
+        const bar = tab.closest('[role="tablist"]');
+        if (!bar) return false;
+        const t = tab.getBoundingClientRect();
+        const b = bar.getBoundingClientRect();
+        return t.top < b.top - 0.5 || t.bottom > b.bottom + 0.5;
+      })
+      .map((tab) => ((tab as HTMLElement).innerText || '').trim()),
+  );
+  expect(outside, 'tabs that stick out of their tab bar').toEqual([]);
+}
+
+/** The athlete picker sits in the middle of the header. */
+export async function expectPickerCentred(page: Page) {
+  const header = await page.locator('header').first().boundingBox();
+  const picker = await page.locator('header [role="combobox"]').first().boundingBox();
+  expect(header && picker, 'header and picker are on screen').toBeTruthy();
+  const offset = picker!.x + picker!.width / 2 - (header!.x + header!.width / 2);
+  expect(Math.abs(offset), 'picker distance from the header centre (px)').toBeLessThanOrEqual(2);
+}
+
 type MsoRequest = { path: string; gymnastid?: string };
 
 /**

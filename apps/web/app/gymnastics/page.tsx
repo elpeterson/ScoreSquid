@@ -4,7 +4,7 @@ import { SportLogo } from '@/features/shared/sport-logo';
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-dvh flex-col">
       <header className="flex items-center justify-between p-6 lg:px-8 bg-white border-b border-gray-100">
         <div className="flex lg:flex-1">
           <SportLogo sport="Gymnastics" tone="dark" className="text-xl font-bold text-indigo-600" />
