@@ -14,6 +14,16 @@ const port = Number(process.env.E2E_MSO_PORT ?? 4010);
 
 const requests = [];
 
+// Women's import reads MSO's HTML pages. The made-up athlete page links to meets
+// 90001 and 90002; only 90001 has a results page.
+const WAG_ATHLETE = '5550001';
+const html = (name) => fs.readFileSync(path.join(fixtures, `${name}.html`), 'utf8');
+
+function page(res, status, body) {
+  res.writeHead(status, { 'content-type': 'text/html' });
+  res.end(body);
+}
+
 function respond(res, status, body) {
   res.writeHead(status, { 'content-type': 'application/json' });
   res.end(JSON.stringify(body));
@@ -27,6 +37,17 @@ http
       if (req.method === 'GET' && req.url === '/__requests') return respond(res, 200, { count: requests.length, requests });
       const params = Object.fromEntries(new URLSearchParams(raw));
       requests.push({ path: req.url, query: params.query_name, gymnastid: params.p_gymnastid, meetid: params.p_meetid });
+
+      if (req.method === 'GET') {
+        const url = new URL(req.url, 'http://stand-in');
+        if (url.pathname === `/Athlete.MyScores/${WAG_ATHLETE}`) return page(res, 200, html('mso_myscores_wag'));
+        if (url.pathname === `/results/90001/${WAG_ATHLETE}`) return page(res, 200, html('mso_results_wag'));
+        // The meet's own page has no athlete table, as on MSO.
+        if (url.pathname === '/results/90001') {
+          return page(res, 200, '<h1 class="event-title">2026 Sample Snowflake Classic</h1><div id="MeetDetails"><h5><strong>Feb 13, 2026 - Feb 15, 2026</strong></h5></div>');
+        }
+        return page(res, 404, 'not in the stand-in');
+      }
 
       if (req.url.startsWith('/Ajax.ProjectsJson.msoGymnast.aspx') && params.query_name === 'lookup_gymnast') {
         const body = read('lookup_gymnast');

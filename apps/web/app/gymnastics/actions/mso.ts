@@ -1,13 +1,13 @@
 'use server';
 
-import * as cheerio from 'cheerio';
 import { createClient } from '@scoresquid/auth/server';
 import { revalidatePath } from 'next/cache';
 import { ensureActiveGymnast } from './gymnast';
 import { isMsoAthleteId, isValidMsoSummary } from '@/features/gymnastics/lib/meet-form';
 import { isUuid } from '@/lib/validation';
 import { MSO_ORIGIN, outboundOrigin } from '@/lib/outbound';
-import { parseScoreRow, parseMeetDates, msoResultsUrl } from '@/features/gymnastics/lib/mso-parser';
+import { parseMeetDates, msoResultsUrl } from '@/features/gymnastics/lib/mso-parser';
+import { parseMeetListHtml, parseResultsHtml } from '@/features/gymnastics/lib/mso-scrape';
 import { insertCompetitionWithScores } from '@/features/gymnastics/lib/competitions';
 import {
   isMsoMeetId,
@@ -133,41 +133,14 @@ async function fetchMsoMeetsScrape(msoId: string): Promise<FetchMeetsResult> {
     if (!response.ok)
       return { error: `Failed to reach MSO (Status: ${response.status})` };
 
-    const html = await response.text();
-    const $ = cheerio.load(html);
-    const meets: MsoMeetSummary[] = [];
-
-    $('a[href^="/results/"]').each((i, el) => {
-      const link = $(el);
-      const href = link.attr('href');
-      const row = link.closest('tr');
-      if (row.length === 0) return;
-
-      const cols = row.find('td');
-
-      let name = $(cols[0]).text().trim();
-      if (!name) name = link.text().trim();
-
-      const level = $(cols[2]).text().trim();
-
-      let dateStr = 'Date TBD';
-      if (cols.length > 4) {
-        const val = $(cols[4]).text().trim();
-        if (val) dateStr = val;
-      }
-
-      if (name === level && name.length < 5) return;
-
-      if (name && href && !meets.find((m) => m.id === href)) {
-        meets.push({
-          id: href,
-          name,
-          dateStr,
-          level,
-          detailsUrl: `${outboundOrigin(MSO_ORIGIN)}${href}`,
-        });
-      }
-    });
+    const meets: MsoMeetSummary[] = parseMeetListHtml(await response.text()).map((m) => ({
+      id: m.href,
+      name: m.name,
+      dateStr: m.dateStr,
+      level: m.level,
+      detailsUrl: `${outboundOrigin(MSO_ORIGIN)}${m.href}`,
+      athleteMsoId: msoId,
+    }));
 
     if (meets.length === 0) {
       return { error: 'No meets found. Double check the Athlete ID.' };
@@ -211,33 +184,11 @@ async function scrapeMeetDetails(
 
   if (!response.ok) throw new Error(`MSO results page: HTTP ${response.status}`);
 
-  const html = await response.text();
-  const $ = cheerio.load(html);
-
-  const name = $('h1.event-title').text().trim() || meet.name;
-  const realDateStr = $('#MeetDetails h5 strong').first().text().trim() || meet.dateStr;
-
-  const scores: { apparatus: string; value: number; place: number | null }[] = [];
-  let allAroundPlace: number | null = null;
-
-  $('#athlete table tbody tr').each((i, row) => {
-    const $row = $(row);
-    const eventLabel = $row.find('th').text().trim();
-    const scoreText = $row.find('span.score').text().trim();
-    const placeText = $row.find('span.place').text().trim();
-
-    if (eventLabel === 'AA') {
-      const place = parseInt(placeText.replace('T', ''));
-      if (!isNaN(place)) allAroundPlace = place;
-    } else {
-      const parsed = parseScoreRow(eventLabel, scoreText, placeText);
-      if (parsed) scores.push(parsed);
-    }
-  });
-
-  const { startDate, endDate } = parseMeetDates(realDateStr);
+  const page = parseResultsHtml(await response.text());
+  const { startDate, endDate } = parseMeetDates(page.dateStr || meet.dateStr);
+  const { allAroundPlace, scores } = page;
   return {
-    name,
+    name: page.name || meet.name,
     level: meet.level || null,
     division: null,
     startDate,
@@ -471,7 +422,7 @@ async function loadMsoMeet(
     if (!isMsoMeetId(meet.meetId)) return { error: 'Missing meet id' };
     // The stored ID wins. The request's only counts for a gymnast with none saved.
     const athleteId = ctx.msoId || meet.athleteMsoId;
-    if (!isMsoMeetId(athleteId)) return { error: 'This gymnast has no MSO Athlete ID set' };
+    if (!isMsoAthleteId(athleteId)) return { error: 'This gymnast has no MSO Athlete ID set' };
     const rows = await msoQuery('msoMeet', 'lookup_scores2', {
       LookupIndex: 1,
       p_meetid: meet.meetId,
@@ -490,7 +441,11 @@ async function loadMsoMeet(
   }
   const meetId = msoMeetIdFromUrl(meet.detailsUrl);
   if (!meetId) return { error: 'Invalid meet link' };
-  return scrapeMeetDetails(`${outboundOrigin(MSO_ORIGIN)}/results/${meetId}`, {
+  // Only the athlete's own results page has their scores. Same rule as above:
+  // the stored ID wins, and the request's only counts for a gymnast with none saved.
+  const athleteId = ctx.msoId || meet.athleteMsoId;
+  if (!isMsoAthleteId(athleteId)) return { error: 'This gymnast has no MSO Athlete ID set' };
+  return scrapeMeetDetails(`${outboundOrigin(MSO_ORIGIN)}/results/${meetId}/${athleteId}`, {
     ...meet,
     name: '',
     level: '',

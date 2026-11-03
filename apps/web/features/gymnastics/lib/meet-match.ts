@@ -21,11 +21,14 @@ export type MsoMeetRef = {
 export const isMsoMeetId = (value: unknown): value is string =>
   typeof value === 'string' && /^\d+$/.test(value);
 
-/** The meet ID in an MSO results link: `/results/12345` gives `12345`. */
+/**
+ * The meet ID in an MSO results link: `/results/12345` gives `12345`, and so does
+ * `/results/12345/678`, the athlete's own page, which women's meet lists link to.
+ */
 export function msoMeetIdFromUrl(url: string | null | undefined): string | null {
   try {
     const { pathname } = new URL(url ?? '', 'https://www.meetscoresonline.com');
-    return /^\/results\/(\d+)\/?$/.exec(pathname)?.[1] ?? null;
+    return /^\/results\/(\d+)(?:\/\d+)?\/?$/.exec(pathname)?.[1] ?? null;
   } catch {
     return null;
   }
