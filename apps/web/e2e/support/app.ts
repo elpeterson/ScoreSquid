@@ -81,10 +81,18 @@ export async function expectTouchTargets(page: Page) {
   expect(small, 'controls with a tap area under 40 px').toEqual([]);
 }
 
-/** How many requests the MSO stand-in has had. */
-export async function msoRequestCount(): Promise<number> {
+type MsoRequest = { path: string; gymnastid?: string };
+
+/**
+ * How many requests the MSO stand-in has had for one athlete: by Athlete ID in the
+ * JSON query or in the page path. Tests run in parallel, so a total would count
+ * other tests' requests too.
+ */
+export async function msoRequestCount(athleteId: string): Promise<number> {
   const res = await fetch(`${MSO_STAND_IN}/__requests`);
-  return ((await res.json()) as { count: number }).count;
+  const { requests } = (await res.json()) as { requests: MsoRequest[] };
+  return requests.filter((r) => r.gymnastid === athleteId || new RegExp(`/${athleteId}(?:[/?#]|$)`).test(r.path))
+    .length;
 }
 
 /** A test with a fresh, signed-out account that is removed afterwards. */

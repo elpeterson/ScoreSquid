@@ -29,6 +29,12 @@ describe('msoMeetIdFromUrl', () => {
     expect(msoMeetIdFromUrl('https://www.meetscoresonline.com/results/12345?athlete=9')).toBe('12345');
   });
 
+  it("reads the ID from an athlete's own results link, as women's meet lists give", () => {
+    expect(msoMeetIdFromUrl('/results/12345/678')).toBe('12345');
+    expect(msoMeetIdFromUrl('/results/12345/678/')).toBe('12345');
+    expect(msoMeetIdFromUrl('https://www.meetscoresonline.com/results/12345/678#IA1__6__Group%202')).toBe('12345');
+  });
+
   it('gives null for anything else', () => {
     expect(msoMeetIdFromUrl('/results/abc')).toBeNull();
     expect(msoMeetIdFromUrl('/Athlete.MyScores/1')).toBeNull();
@@ -38,6 +44,8 @@ describe('msoMeetIdFromUrl', () => {
   it('only reads the path, not the query string', () => {
     expect(msoMeetIdFromUrl('https://www.meetscoresonline.com/results/abc?x=/results/5')).toBeNull();
     expect(msoMeetIdFromUrl('/results/12/extra')).toBeNull();
+    expect(msoMeetIdFromUrl('/results/12/34/56')).toBeNull();
+    expect(msoMeetIdFromUrl('/results/12/34abc')).toBeNull();
   });
 });
 
