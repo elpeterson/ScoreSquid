@@ -5,7 +5,9 @@ import { Button } from '@scoresquid/ui/components/button';
 import { Card, CardContent } from '@scoresquid/ui/components/card';
 import { ensureActiveArcher } from '@/app/archery/actions/archer';
 import { FileUp, LineChart, Trophy } from 'lucide-react';
+import { RepeatedScorecards } from '@/features/archery/components/repeated-scorecards';
 import { fetchArcherEvents } from '@/features/archery/lib/events';
+import { repeatedScorecards, suggestedKeep } from '@/features/archery/lib/repeats';
 import {
   computeEventStats,
   eventDate,
@@ -52,6 +54,16 @@ export default async function Dashboard() {
     for (const p of trend) if (p.personalBest) personalBests.add(p.eventId);
   }
 
+  const repeats = repeatedScorecards(events).map((group) => ({
+    keep: suggestedKeep(group).id,
+    cards: group.map((e) => ({
+      id: e.id,
+      name: e.name,
+      detail: `${formatDate(eventDate(e))} · ${setupLabel(e)}`,
+      total: computeEventStats(e).total,
+    })),
+  }));
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -71,6 +83,8 @@ export default async function Dashboard() {
           </Button>
         </div>
       </div>
+
+      {repeats.length > 0 && <RepeatedScorecards groups={repeats} />}
 
       {events.length === 0 ? (
         <Card>

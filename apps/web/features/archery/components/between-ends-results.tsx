@@ -184,6 +184,11 @@ function ResultRow({
             {formatDate(r.tournament_date)}
             {r.division ? ` · ${r.division}` : ''}
           </span>
+          {r.listings > 1 && (
+            <span className="block text-xs text-muted-foreground">
+              One result, listed {r.listings} times on Between Ends.
+            </span>
+          )}
         </label>
         <span className="shrink-0 font-semibold tabular-nums">{r.total ?? '—'}</span>
       </div>

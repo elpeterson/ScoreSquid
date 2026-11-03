@@ -27,7 +27,11 @@ export type StoredMatch = {
   arrows_per_end: number | null;
   scoring_rule: number | null;
   round_totals: string | null;
+  /** The same result as listed in other Between Ends events: see collapseRepeats. */
+  copies?: MatchListing[];
 };
+
+export type MatchListing = Pick<StoredMatch, 'event_id' | 'aid' | 'tournament_name' | 'tournament_date'>;
 
 export type ExistingScorecard = {
   id: string;
@@ -121,7 +125,8 @@ const sameList = (a: number[], b: number[]) => a.length === b.length && a.every(
 
 /** How a found result relates to what the archer already has (SQ-021). Never merges anything. */
 export function relateToExisting(m: StoredMatch, existing: ExistingScorecard[]): Relation {
-  const own = existing.find((e) => e.be_event_id === m.event_id && e.be_aid === m.aid);
+  const listings: MatchListing[] = [m, ...(m.copies ?? [])];
+  const own = existing.find((e) => listings.some((l) => e.be_event_id === l.event_id && e.be_aid === l.aid));
   if (own) {
     if (m.arrows && own.be_arrows && m.arrows !== own.be_arrows) {
       const plan = planRounds(m);
@@ -142,8 +147,9 @@ export function relateToExisting(m: StoredMatch, existing: ExistingScorecard[]):
   const sameTournament = existing.filter(
     (e) =>
       e.be_event_id === null &&
-      e.start_date === m.tournament_date &&
-      normaliseTitle(e.name) === normaliseTitle(m.tournament_name),
+      listings.some(
+        (l) => e.start_date === l.tournament_date && normaliseTitle(e.name) === normaliseTitle(l.tournament_name),
+      ),
   );
 
   let close: ExistingScorecard | null = null;
@@ -193,6 +199,42 @@ export function dropRepeatedCombined<T extends Pick<StoredMatch, 'event_type' | 
         (r.arrows === arrows || arrows.startsWith(r.arrows) || r.arrows.startsWith(arrows)),
     );
   });
+}
+
+type RepeatFields = Pick<StoredMatch, 'event_id' | 'aid' | 'match_kind' | 'event_type' | 'total' | 'arrows'>;
+
+/** A part-shot string is too short to identify a result alone, so it also needs the same entry. */
+function sameResult(a: RepeatFields, b: RepeatFields): boolean {
+  if (a.arrows && b.arrows) return a.arrows === b.arrows && (a.aid === b.aid || !a.arrows.includes('E'));
+  return a.aid === b.aid && a.total != null && a.total === b.total;
+}
+
+/**
+ * Between Ends republishes a result in roll-up tournaments, each with its own event id,
+ * so one shoot can be found several times. This keeps one result: a number match over a
+ * name match, then a RankingEvent, then the lowest event id, so every search keeps the
+ * same one. The other listings go in `copies`, so a scorecard made from any of them
+ * still counts as this result.
+ */
+export function collapseRepeats<T extends RepeatFields & MatchListing>(matches: T[]): T[] {
+  const preference = (m: T) => [m.match_kind === 'number' ? 0 : 1, m.event_type === 'RankingEvent' ? 0 : 1, m.event_id];
+  const ordered = [...matches].sort((a, b) => {
+    const [x, y] = [preference(a), preference(b)];
+    return x[0]! - y[0]! || x[1]! - y[1]! || x[2]! - y[2]!;
+  });
+
+  const groups: { kept: T; members: T[] }[] = [];
+  for (const m of ordered) {
+    const group = groups.find((g) => g.members.some((member) => sameResult(member, m)));
+    if (group) group.members.push(m);
+    else groups.push({ kept: m, members: [m] });
+  }
+  return groups.map(({ kept, members }) => ({
+    ...kept,
+    copies: members
+      .filter((m) => m !== kept)
+      .map(({ event_id, aid, tournament_name, tournament_date }) => ({ event_id, aid, tournament_name, tournament_date })),
+  }));
 }
 
 export type SetupDefaults = Record<string, { distance_m: number | null; face_cm: number | null }>;
