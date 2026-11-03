@@ -34,6 +34,9 @@ export function LoginScreen({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const [view, setView] = useState<'default' | 'forgot'>('default');
+  // React resets a form after its action runs. Holding the email here keeps it through
+  // a failed attempt, while the password is deliberately left to be cleared.
+  const [email, setEmail] = useState('');
 
   const handleLogin = async (formData: FormData) => {
     setError(null);
@@ -101,6 +104,8 @@ export function LoginScreen({
                 name="email"
                 type="email"
                 placeholder="m@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
