@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { createClient } from '@scoresquid/auth/server';
 import { ensureActiveArcher } from '@/app/archery/actions/archer';
 import { fetchArcherEvents } from '@/features/archery/lib/events';
+import { isComparable } from '@/features/archery/lib/stats';
 import { setupGroups, trendForSetup } from '@/features/archery/lib/stats';
 import { Button } from '@scoresquid/ui/components/button';
 import { Card, CardContent } from '@scoresquid/ui/components/card';
@@ -19,8 +20,8 @@ export default async function InsightsPage() {
   if (!activeArcherId) redirect('/dashboard');
 
   const { events: allEvents, error } = await fetchArcherEvents(supabase, activeArcherId);
-  // A result imported with totals but no arrows has nothing to analyse.
-  const events = allEvents.filter((e) => e.rounds.some((r) => r.ends.length > 0));
+  const events = allEvents.filter(isComparable);
+  const leftOut = allEvents.length - events.length;
   if (error) {
     return <div className="p-8 text-red-500">Error loading scorecards.</div>;
   }
@@ -36,8 +37,17 @@ export default async function InsightsPage() {
         <h2 className="text-3xl font-bold tracking-tight">Insights</h2>
         <p className="text-muted-foreground mt-1">
           Scores are only compared within one setup: the same bow, indoor or
-          outdoor, distance and face.
+          outdoor, distance and face. Between Ends doesn&apos;t record distance or face, so a
+          label says so when they&apos;re missing, and rounds shot at different distances, such
+          as U13 and U15, can share a chart until you fill them in.
         </p>
+        {leftOut > 0 && (
+          <p className="text-sm text-muted-foreground mt-2">
+            {leftOut === 1 ? '1 scorecard is' : `${leftOut} scorecards are`} left out because a
+            round wasn&apos;t shot in full or its arrows aren&apos;t available. You can still see
+            them on the dashboard.
+          </p>
+        )}
       </div>
 
       {groups.length === 0 ? (

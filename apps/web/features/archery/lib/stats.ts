@@ -22,6 +22,8 @@ export type EventRow = {
   distance_m: number | null;
   face_cm: number | null;
   arrows_per_end: number;
+  /** What Between Ends last showed, on results imported from a search. */
+  be_arrows?: string | null;
   rounds: {
     round_number: number;
     total: number;
@@ -109,6 +111,25 @@ export function computeEventStats(event: EventRow): EventStats {
     ),
     distribution,
   };
+}
+
+/**
+ * Whether a result is fair to compare: its arrows are stored and every round was shot
+ * in full. A part-shot round can have a high average from a few good arrows, so it
+ * stays in the history but out of trends and personal bests. The 'E' is Between Ends'
+ * mark for an arrow not shot yet.
+ */
+export function isComparable(event: Pick<EventRow, 'arrows_per_end' | 'be_arrows' | 'rounds'>): boolean {
+  if (event.rounds.length === 0 || event.be_arrows?.includes('E')) return false;
+  const endCounts = new Set(event.rounds.map((r) => r.ends.length));
+  if (endCounts.size !== 1 || endCounts.has(0)) return false;
+  return event.rounds.every((r) => {
+    const numbers = r.ends.map((e) => e.end_number).sort((a, b) => a - b);
+    return (
+      numbers.every((n, i) => n === i + 1) &&
+      r.ends.every((e) => e.arrows.length === event.arrows_per_end)
+    );
+  });
 }
 
 /** Identity of a comparable group: bow style + indoor/outdoor + distance + face. */
