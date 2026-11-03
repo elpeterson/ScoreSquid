@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, FileText } from 'lucide-react';
+import { ArrowLeft, ExternalLink, FileText } from 'lucide-react';
 import { createClient } from '@scoresquid/auth/server';
 import { EVENT_SELECT, type EventDetail } from '@/features/archery/lib/events';
+import { beResultUrl } from '@/features/archery/lib/betweenends/links';
 import { computeEventStats, eventDate, setupLabel } from '@/features/archery/lib/stats';
 import { formatDate, formatNumber, formatPercent } from '@/features/archery/lib/format';
 import { Button } from '@scoresquid/ui/components/button';
@@ -38,6 +39,23 @@ export default async function EventPage({
     pdfUrl = signed?.signedUrl ?? null;
   }
 
+  // A ranking event has its own page on Between Ends; the event type is kept with the
+  // user's search matches, which only they can read.
+  let beUrl: string | null = null;
+  if (event.be_event_id !== null && event.be_tournament_id !== null) {
+    const { data: found } = await supabase
+      .from('arch_be_search_matches')
+      .select('event_type')
+      .eq('event_id', event.be_event_id)
+      .eq('aid', event.be_aid!)
+      .limit(1);
+    beUrl = beResultUrl({
+      tournamentId: event.be_tournament_id,
+      eventId: event.be_event_id,
+      eventType: (found?.[0]?.event_type as string | undefined) ?? null,
+    });
+  }
+
   const tiles = [
     { label: 'Score', value: `${stats.total}`, sub: `of ${stats.maxScore}` },
     { label: 'Arrow average', value: formatNumber(stats.arrowAverage), sub: `${stats.arrowCount} arrows` },
@@ -69,7 +87,14 @@ export default async function EventPage({
           </p>
           <p className="text-sm font-medium">{setupLabel(event)}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {beUrl && (
+            <Button asChild variant="outline" size="sm">
+              <a href={beUrl} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="mr-2 h-4 w-4" /> View on Between Ends
+              </a>
+            </Button>
+          )}
           {pdfUrl && (
             <Button asChild variant="outline" size="sm">
               <a href={pdfUrl} target="_blank" rel="noreferrer">

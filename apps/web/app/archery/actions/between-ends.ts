@@ -19,6 +19,7 @@ import {
   type Relation,
   type StoredMatch,
 } from '@/features/archery/lib/betweenends/import-plan';
+import { autoLinks, canLink, type ScorecardLink } from '@/features/archery/lib/betweenends/links';
 import { resolveSessionDate } from '@/features/archery/lib/scorecard/dates';
 import type { SearchMatch, SearchStatus } from '@/features/archery/lib/betweenends/search-view';
 import { beSearchWorkflow } from '@/features/archery/workflows/be-search';
@@ -174,12 +175,42 @@ async function loadExisting(supabase: Supabase, userId: string, athleteId: strin
   return (data ?? []) as unknown as ExistingScorecard[];
 }
 
+/**
+ * Links an uploaded scorecard to its result: only the ids, so its arrows, totals and
+ * setup stay as they are, and with no be_arrows no "changed" prompt can follow. Only
+ * the user's own scorecard for this archer, and only one not linked already.
+ */
+async function linkScorecard(supabase: Supabase, userId: string, athleteId: string, link: ScorecardLink) {
+  const { data, error } = await supabase
+    .from('arch_events')
+    .update({ be_tournament_id: link.tournamentId, be_event_id: link.eventId, be_aid: link.aid })
+    .eq('id', link.scorecardId)
+    .eq('user_id', userId)
+    .eq('athlete_id', athleteId)
+    .is('be_event_id', null)
+    .select('id');
+  return { linked: !error && (data?.length ?? 0) > 0, duplicate: error?.code === '23505' };
+}
+
 async function loadResults(supabase: Supabase, userId: string, athleteId: string): Promise<BeResult[]> {
   const [matches, existing] = await Promise.all([
     loadStoredMatches(supabase, userId, athleteId),
     loadExisting(supabase, userId, athleteId),
   ]);
-  return matches.map((m) => ({
+  const relations = matches.map((m) => relateToExisting(m, existing));
+
+  // An uploaded scorecard a search finds exactly gets its Between Ends link (SQ-036).
+  for (const link of autoLinks(matches, relations)) {
+    const { linked } = await linkScorecard(supabase, userId, athleteId, link);
+    if (!linked) continue;
+    relations.forEach((r, i) => {
+      if (r.kind === 'imported-pdf' && r.eventId === link.scorecardId && matches[i]!.event_id === link.eventId) {
+        relations[i] = { kind: 'imported', eventId: r.eventId };
+      }
+    });
+  }
+
+  return matches.map((m, i) => ({
     key: `${m.event_id}-${m.aid}`,
     event_id: m.event_id,
     aid: m.aid,
@@ -191,7 +222,7 @@ async function loadResults(supabase: Supabase, userId: string, athleteId: string
     arrows_per_end: m.arrows_per_end,
     total: m.total,
     listings: 1 + (m.copies?.length ?? 0),
-    relation: relateToExisting(m, existing),
+    relation: relations[i]!,
     problem: importProblem(m),
   }));
 }
@@ -455,5 +486,49 @@ export async function resolveBeChange(input: unknown): Promise<{ error?: string 
   revalidatePath(`/archery/events/${relation.eventId}`);
   revalidatePath('/archery/dashboard');
   revalidatePath('/archery/insights');
+  return {};
+}
+
+const LinkRequest = z.object({
+  athleteId: z.string().uuid(),
+  event_id: z.number().int().positive(),
+  aid: z.number().int().positive(),
+  scorecardId: z.string().uuid(),
+});
+
+/**
+ * Links an uploaded scorecard to a result that may be the same, once the parent says
+ * so (SQ-036). The result must be one of the user's own stored matches, and the
+ * scorecard the one it was matched with: their own, for this archer, not yet linked.
+ */
+export async function linkBeResult(input: unknown): Promise<{ error?: string }> {
+  const parsed = LinkRequest.safeParse(input);
+  if (!parsed.success) return { error: 'That scorecard could not be linked.' };
+  const { athleteId, event_id, aid, scorecardId } = parsed.data;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: 'Please sign in' };
+
+  const [matches, existing] = await Promise.all([
+    loadStoredMatches(supabase, user.id, athleteId),
+    loadExisting(supabase, user.id, athleteId),
+  ]);
+  const match = matches.find((m) => m.event_id === event_id && m.aid === aid);
+  if (!match || !canLink(relateToExisting(match, existing), scorecardId)) {
+    return { error: 'That scorecard can no longer be linked to this result.' };
+  }
+
+  const { linked, duplicate } = await linkScorecard(supabase, user.id, athleteId, {
+    scorecardId,
+    tournamentId: match.tournament_id,
+    eventId: match.event_id,
+    aid: match.aid,
+  });
+  if (duplicate) return { error: 'This result is already linked to another scorecard.' };
+  if (!linked) return { error: 'That scorecard could not be linked.' };
+  revalidatePath(`/archery/events/${scorecardId}`);
   return {};
 }

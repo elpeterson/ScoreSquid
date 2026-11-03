@@ -143,3 +143,102 @@ test('Insights marks one personal best and keeps its axes readable (SQ-033, SQ-0
   await expect(page.locator('.recharts-xAxis .recharts-cartesian-axis-tick-value').first()).toContainText("'2");
   await expectNoSidewaysScroll(page);
 });
+
+// SQ-036: scorecards link to their Between Ends results.
+const BE = 'https://www.betweenends.com';
+
+/** An uploaded scorecard as the PDF import saves it: no Between Ends ids. */
+async function addUploadedScorecard(
+  account: import('./support/app').Account,
+  archer: string,
+  name: string,
+  date: string,
+  ends: string[][],
+) {
+  const total = ends.flat().reduce((sum, a) => sum + (a === 'X' ? 10 : a === 'M' ? 0 : Number(a)), 0);
+  const { data, error } = await account.db.rpc('import_scorecard', {
+    payload: {
+      event: {
+        athlete_id: archer, name, start_date: date, shot_on: date, session: 'Range, Saturday 9am', environment: 'indoor',
+        bow_style: 'compound', distance_m: 18, face_cm: null, arrows_per_end: 3, bonus_labels: [], source: 'betweenends',
+      },
+      rounds: [{ round_number: 1, total, bonus: [], ends: ends.map((arrows, i) => ({ end_number: i + 1, arrows })) }],
+    },
+  });
+  expect(error).toBeNull();
+  return data as string;
+}
+
+async function storedEvent(account: import('./support/app').Account, id: string) {
+  const { data } = await account.db
+    .from('arch_events')
+    .select('be_tournament_id, be_event_id, be_aid, be_arrows, rounds:arch_rounds ( total, ends:arch_ends ( arrows ) )')
+    .eq('id', id)
+    .single();
+  return data!;
+}
+
+test('scorecards link to Between Ends: imported, and an uploaded PDF found exactly (SQ-036) @phone', async ({ page, account }) => {
+  const archer = await addArcher(account, 'Pat Madeup');
+  // Between Ends has TTTTTT (60) for Made Up Open 1; the PDF says X10 10 / 10 10 10, also 60.
+  const found = match(0);
+  const ends = [['X', '10', '10'], ['10', '10', '10']];
+  const uploaded = await addUploadedScorecard(account, archer, found.tournament_name, found.tournament_date, ends);
+  await seedSearch(account, archer, [found, match(1)]);
+
+  await signIn(page, 'archery', account.email);
+  await page.goto('/import');
+  await expect(page.locator('section[aria-label="Tournaments found"] li')).toHaveCount(2);
+
+  // Criterion 2: linked when the results load. Criterion 5: arrows untouched, no prompt.
+  await expect.poll(async () => (await storedEvent(account, uploaded)).be_event_id).toBe(found.event_id);
+  const linked = await storedEvent(account, uploaded);
+  expect(linked).toMatchObject({ be_tournament_id: found.event_id, be_aid: found.aid, be_arrows: null });
+  expect(linked.rounds[0]!.total).toBe(60);
+  expect(linked.rounds[0]!.ends.map((e) => e.arrows)).toEqual(ends);
+  await page.reload();
+  await expect(page.getByText('Between Ends has changed this result')).toHaveCount(0);
+
+  // Criterion 1: a search-imported scorecard links to its event.
+  await page.getByRole('button', { name: 'Import 1 selected' }).click();
+  await expect(page.getByText(/^Already imported/)).toHaveCount(2, { timeout: 60_000 });
+  const { data: imported } = await account.db.from('arch_events').select('id').eq('be_event_id', match(1).event_id).single();
+  for (const [id, m] of [[imported!.id as string, match(1)], [uploaded, found]] as const) {
+    await page.goto(`/events/${id}`);
+    const link = page.getByRole('link', { name: 'View on Between Ends' });
+    await expect(link).toHaveAttribute('href', `${BE}/tournament/${m.event_id}/event/${m.event_id}`);
+    await expect(link).toHaveAttribute('target', '_blank');
+    await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  }
+  await expectNoSidewaysScroll(page);
+});
+
+test('a possible match links only when the parent says so, and no match shows no link (SQ-036)', async ({ page, account }) => {
+  const archer = await addArcher(account, 'Pat Madeup');
+  const found = match(0);
+  // Same tournament and date, different total: only possibly the same.
+  const possible = await addUploadedScorecard(account, archer, found.tournament_name, found.tournament_date, [['9', '9', '9'], ['9', '9', '9']]);
+  const unrelated = await addUploadedScorecard(account, archer, 'Unrelated Made Up Shoot', '2025-06-01', [['9', '9', '9']]);
+  await seedSearch(account, archer, [found]);
+
+  await signIn(page, 'archery', account.email);
+  await page.goto('/import');
+  const row = page.locator('section[aria-label="Tournaments found"] li', { hasText: found.tournament_name });
+  await expect(row.getByText('You may already have this')).toBeVisible();
+  expect((await storedEvent(account, possible)).be_event_id, 'nothing links until the parent does').toBeNull();
+
+  await row.getByRole('button', { name: 'Link my scorecard' }).click();
+  await expect(row.getByText(/^Already imported/)).toBeVisible();
+  const linked = await storedEvent(account, possible);
+  expect(linked).toMatchObject({ be_event_id: found.event_id, be_aid: found.aid, be_arrows: null });
+  expect(linked.rounds[0]!.total).toBe(54);
+
+  await page.goto(`/events/${possible}`);
+  await expect(page.getByRole('link', { name: 'View on Between Ends' })).toHaveAttribute(
+    'href',
+    `${BE}/tournament/${found.event_id}/event/${found.event_id}`,
+  );
+  await page.goto(`/events/${unrelated}`);
+  await expect(page.getByRole('heading', { name: 'Unrelated Made Up Shoot' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'View on Between Ends' })).toHaveCount(0);
+});

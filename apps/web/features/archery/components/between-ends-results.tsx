@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button } from '@scoresquid/ui/components/button';
 import {
   importBeResults,
+  linkBeResult,
   resolveBeChange,
   type BeResult,
   type ImportOutcome,
@@ -114,6 +115,14 @@ export function BetweenEndsResults({
       await onChanged();
     });
 
+  const link = (r: BeResult, scorecardId: string) =>
+    startTransition(async () => {
+      setError(null);
+      const result = await linkBeResult({ athleteId, event_id: r.event_id, aid: r.aid, scorecardId });
+      if (result.error) setError(result.error);
+      await onChanged();
+    });
+
   const row = (r: BeResult) => (
     <ResultRow
       key={r.key}
@@ -126,6 +135,7 @@ export function BetweenEndsResults({
       onTick={(on) => setTicks({ ...ticks, [r.key]: on })}
       onSetup={(s) => setSetups({ ...setups, [r.key]: s })}
       onResolve={(choice) => resolve(r, choice)}
+      onLink={(scorecardId) => link(r, scorecardId)}
     />
   );
 
@@ -198,6 +208,7 @@ function ResultRow({
   onTick,
   onSetup,
   onResolve,
+  onLink,
 }: {
   result: BeResult;
   archerName: string;
@@ -208,6 +219,8 @@ function ResultRow({
   onTick: (on: boolean) => void;
   onSetup: (setup: Setup) => void;
   onResolve: (choice: 'accept' | 'keep') => void;
+  /** Links the scorecard this result was matched with to it (SQ-036). */
+  onLink: (scorecardId: string) => void;
 }) {
   const { relation } = r;
   const tickable = canTick(r);
@@ -254,14 +267,31 @@ function ResultRow({
         </p>
       )}
 
+      {relation.kind === 'imported-pdf' && (
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            If it&apos;s yours, link it so the scorecard opens this result on Between Ends. Its arrows stay as they are.
+          </p>
+          <Button size="sm" variant="outline" disabled={pending} onClick={() => onLink(relation.eventId)}>
+            Link my scorecard
+          </Button>
+        </div>
+      )}
+
       {relation.kind === 'maybe-imported' && !r.problem && (
-        <p className="text-xs text-muted-foreground">
-          You may already have this: a{' '}
-          <Link href={`/events/${relation.eventId}`} className="underline">
-            scorecard from the same tournament
-          </Link>{' '}
-          has different details. Tick it only if this is a separate result.
-        </p>
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            You may already have this: a{' '}
+            <Link href={`/events/${relation.eventId}`} className="underline">
+              scorecard from the same tournament
+            </Link>{' '}
+            has different details. Link it if it&apos;s the same result; its arrows stay as they are. Tick it only if
+            this is a separate result.
+          </p>
+          <Button size="sm" variant="outline" disabled={pending} onClick={() => onLink(relation.eventId)}>
+            Link my scorecard
+          </Button>
+        </div>
       )}
 
       {relation.kind === 'changed' && (
