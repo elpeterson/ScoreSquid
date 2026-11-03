@@ -1,5 +1,6 @@
 import {
   expect,
+  expectAvatarVisible,
   expectNoSidewaysScroll,
   expectPickerCentred,
   expectTabsInsideBars,
@@ -19,7 +20,10 @@ async function checkScreen(page: import('@playwright/test').Page, isMobile: bool
     if (width) await page.setViewportSize({ width, height: own.height });
     await expectNoSidewaysScroll(page);
     await expectTabsInsideBars(page);
-    if (await page.locator('header [role="combobox"]').count()) await expectPickerCentred(page);
+    if (await page.locator('header [role="combobox"]').count()) {
+      await expectPickerCentred(page);
+      await expectAvatarVisible(page);
+    }
     if (isMobile) await expectTouchTargets(page);
     if (width) await page.setViewportSize(own);
   }

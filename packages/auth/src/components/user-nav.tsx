@@ -50,7 +50,7 @@ export function UserNav({
         <Button variant="ghost" className="relative h-8 w-8 rounded-full" aria-label="Account menu">
           <Avatar className="h-8 w-8">
             <AvatarImage src="" alt={email} />
-            <AvatarFallback className="bg-primary text-primary-foreground">
+            <AvatarFallback className="bg-white/15 text-white ring-1 ring-inset ring-white/40">
               {initials}
             </AvatarFallback>
           </Avatar>
