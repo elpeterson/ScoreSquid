@@ -10,7 +10,9 @@ import { rankingEntries } from '@/features/archery/lib/betweenends/entries';
 import {
   collapseRepeats,
   dropRepeatedCombined,
+  IMPORT_BATCH_SIZE,
   importProblem,
+  MAX_CONFIRMED_PER_IMPORT,
   planRounds,
   relateToExisting,
   type ExistingScorecard,
@@ -276,8 +278,6 @@ export async function getLatestBeSearch(
   };
 }
 
-const MAX_CONFIRMED_PER_IMPORT = 5;
-
 const ImportRequest = z.object({
   athleteId: z.string().uuid(),
   items: z
@@ -296,7 +296,7 @@ const ImportRequest = z.object({
       }),
     )
     .min(1)
-    .max(25),
+    .max(IMPORT_BATCH_SIZE),
 });
 
 export type ImportOutcome = { key: string; status: 'saved' | 'skipped' | 'failed'; message?: string };
