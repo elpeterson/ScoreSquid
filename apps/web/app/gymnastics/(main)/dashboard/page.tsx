@@ -2,7 +2,6 @@ import { createClient } from '@scoresquid/auth/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@scoresquid/ui/components/button';
-import { BetaBanner } from '@/features/gymnastics/components/beta-banner';
 import { ensureActiveGymnast } from '@/app/gymnastics/actions/gymnast';
 import { CloudDownload, LineChart } from 'lucide-react';
 import { CompetitionList } from '@/features/gymnastics/components/competition-list';
@@ -52,7 +51,6 @@ export default async function Dashboard() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-10">
-      <BetaBanner />
 
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Score History</h2>
