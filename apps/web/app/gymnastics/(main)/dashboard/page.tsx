@@ -52,9 +52,9 @@ export default async function Dashboard() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-10">
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-3xl font-bold tracking-tight">Score History</h2>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Button asChild variant="outline">
             <Link href="/insights">
               <LineChart className="mr-2 h-4 w-4" />

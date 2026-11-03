@@ -37,7 +37,8 @@ export default async function RootLayout({
             {children}
           </main>
 
-          <Toaster />
+          {/* At the top, so on a phone notifications don't cover the controls being used. */}
+          <Toaster position="top-center" />
           <Analytics />
           <SpeedInsights />
         </ThemeProvider>

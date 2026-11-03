@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { expect, expectNoSidewaysScroll, knownFailureOn, signIn, test } from './support/app';
+import { expect, expectNoSidewaysScroll, signIn, test } from './support/app';
 import { scorecardPdf } from './support/pdf';
 import { addArcher, arrowTotal, distinctArrows, seedSearch, type Match } from './support/seed';
 
@@ -120,8 +120,6 @@ test('a parent imports a scorecard PDF, sees it in Insights and deletes it', asy
 });
 
 test('Insights marks one personal best and keeps its axes readable (SQ-033, SQ-035) @phone', async ({ page, account }) => {
-  // Insights is 3 px too wide at 393 px.
-  knownFailureOn('iphone', 'SQ-043');
   const archer = await addArcher(account, 'Pat Madeup');
   // An even split over all six colors, which once made the percent axis read "0001%".
   // Spread over two years, so the date axis has to show them.

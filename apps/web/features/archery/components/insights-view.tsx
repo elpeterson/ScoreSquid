@@ -157,7 +157,7 @@ export function InsightsView({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <CardTitle className="text-base">Over time</CardTitle>
             <Tabs value={metric} onValueChange={(v) => setMetric(v as Metric)}>
-              <TabsList>
+              <TabsList className="grid h-auto w-full grid-cols-2 sm:inline-flex sm:h-9 sm:w-auto">
                 {(Object.keys(METRICS) as Metric[]).map((k) => (
                   <TabsTrigger key={k} value={k} className="text-xs">
                     {METRICS[k].label}
