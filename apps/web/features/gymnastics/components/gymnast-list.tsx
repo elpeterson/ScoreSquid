@@ -116,6 +116,7 @@ function GymnastRow({ gymnast }: { gymnast: Gymnast }) {
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-muted-foreground hover:text-primary"
+              aria-label={`Edit ${gymnast.name}`}
             >
               <Pencil className="h-4 w-4" />
             </Button>
@@ -194,6 +195,7 @@ function GymnastRow({ gymnast }: { gymnast: Gymnast }) {
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-muted-foreground hover:text-red-600"
+              aria-label={`Delete ${gymnast.name}`}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
