@@ -6,7 +6,7 @@ import type { EventRow } from './stats';
 export const EVENT_SELECT = `
   id, name, venue, start_date, end_date, shot_on, session, target, division,
   bow_style, environment, distance_m, face_cm, arrows_per_end, bonus_labels,
-  source, source_path, name_on_card, created_at, be_arrows,
+  source, source_path, name_on_card, created_at, be_arrows, be_tournament_id, be_event_id, be_aid,
   rounds:arch_rounds ( round_number, total, bonus, ends:arch_ends ( end_number, arrows ) )
 `;
 
@@ -21,6 +21,10 @@ export type EventDetail = EventRow & {
   source_path: string | null;
   name_on_card: string | null;
   created_at: string;
+  /** The Between Ends result this scorecard came from or is linked to (SQ-036). */
+  be_tournament_id: number | null;
+  be_event_id: number | null;
+  be_aid: number | null;
   rounds: (EventRow['rounds'][number] & { bonus: number[] })[];
 };
 
