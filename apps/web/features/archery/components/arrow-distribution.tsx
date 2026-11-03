@@ -1,8 +1,7 @@
 import { ARROW_ORDER } from '@/features/archery/lib/stats';
-import { ARROW_CLASSES } from '@/features/archery/components/arrow-chip';
-import { cn } from '@scoresquid/ui/lib/utils';
+import { arrowSwatchStyle } from '@/features/archery/lib/arrow-colors';
 
-/** Horizontal bars, one per score value, colored by target ring. */
+/** Horizontal bars, one per score value, in the user's arrow colors. */
 export function ArrowDistribution({
   distribution,
 }: {
@@ -22,8 +21,8 @@ export function ArrowDistribution({
             <span className="w-5 text-right font-medium tabular-nums">{v}</span>
             <div className="h-4 flex-1 rounded-sm bg-muted/50">
               <div
-                className={cn('h-4 rounded-sm', ARROW_CLASSES[v])}
-                style={{ width: `${(count / max) * 100}%` }}
+                className="h-4 rounded-sm"
+                style={{ ...arrowSwatchStyle(v), width: `${(count / max) * 100}%` }}
               />
             </div>
             <span className="w-14 text-right tabular-nums text-muted-foreground">

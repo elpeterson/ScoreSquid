@@ -2,6 +2,8 @@ import { createClient } from '@scoresquid/auth/server';
 import { PasswordForm } from '@scoresquid/auth/components/password-form';
 import { updatePassword } from './actions';
 import { ArcherList } from '@/features/archery/components/archer-list';
+import { ArrowColorsSetting } from '@/features/archery/components/arrow-colors-setting';
+import { getUserSettings, updateSetting } from '@/app/archery/actions/settings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@scoresquid/ui/components/tabs';
 
 export default async function AccountPage({
@@ -14,6 +16,8 @@ export default async function AccountPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  const settings = await getUserSettings();
 
   const { data: archers } = await supabase
     .from('archer_athletes')
@@ -28,16 +32,24 @@ export default async function AccountPage({
       </h2>
 
       <Tabs
-        defaultValue={tab === 'security' ? 'security' : 'archers'}
+        defaultValue={tab === 'security' || tab === 'display' ? tab : 'archers'}
         className="space-y-4"
       >
         <TabsList>
           <TabsTrigger value="archers">Archers</TabsTrigger>
+          <TabsTrigger value="display">Display</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
         </TabsList>
 
         <TabsContent value="archers" className="space-y-4">
           <ArcherList archers={archers ?? []} />
+        </TabsContent>
+
+        <TabsContent value="display" className="space-y-4">
+          <ArrowColorsSetting
+            detailed={settings.detailed_arrow_colors}
+            updateSetting={updateSetting}
+          />
         </TabsContent>
 
         <TabsContent value="security" className="space-y-4">
