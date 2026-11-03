@@ -16,12 +16,11 @@ import type {
   BeTournament,
   BeTournamentDetail,
 } from './types';
+import { BE_API_ORIGIN, outboundOrigin } from '@/lib/outbound';
 
 // ---------------------------------------------------------------------------
 // Transport
 // ---------------------------------------------------------------------------
-
-export const BE_API_BASE = 'https://resultsapi.herokuapp.com';
 
 const USER_AGENT = 'ScoreSquid/0.1 (+https://github.com/elpeterson/ScoreSquid)';
 
@@ -82,7 +81,7 @@ export function createBeClient(options: ClientOptions = {}) {
     for (let attempt = 1; attempt <= attempts; attempt++) {
       await throttle();
       try {
-        const res = await doFetch(`${BE_API_BASE}${path}`, {
+        const res = await doFetch(`${outboundOrigin(BE_API_ORIGIN)}${path}`, {
           headers,
           signal: AbortSignal.timeout(timeoutMs),
         });

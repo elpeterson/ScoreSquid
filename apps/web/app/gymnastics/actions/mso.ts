@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { ensureActiveGymnast } from './gymnast';
 import { isMsoAthleteId, isValidMsoSummary } from '@/features/gymnastics/lib/meet-form';
 import { isUuid } from '@/lib/validation';
+import { MSO_ORIGIN, outboundOrigin } from '@/lib/outbound';
 import { parseScoreRow, parseMeetDates, msoResultsUrl } from '@/features/gymnastics/lib/mso-parser';
 import { insertCompetitionWithScores } from '@/features/gymnastics/lib/competitions';
 import {
@@ -119,7 +120,7 @@ async function fetchMsoMeetsScrape(msoId: string): Promise<FetchMeetsResult> {
 
   try {
     const response = await fetch(
-      `https://www.meetscoresonline.com/Athlete.MyScores/${encodeURIComponent(msoId)}`,
+      `${outboundOrigin(MSO_ORIGIN)}/Athlete.MyScores/${encodeURIComponent(msoId)}`,
       {
         next: { revalidate: 300 }, // cache meet list for 5 minutes
         headers: {
@@ -163,7 +164,7 @@ async function fetchMsoMeetsScrape(msoId: string): Promise<FetchMeetsResult> {
           name,
           dateStr,
           level,
-          detailsUrl: `https://www.meetscoresonline.com${href}`,
+          detailsUrl: `${outboundOrigin(MSO_ORIGIN)}${href}`,
         });
       }
     });
@@ -358,7 +359,7 @@ async function fetchMsoMeetsApi(msoId: string): Promise<FetchMeetsResult> {
     dateStr: m.monthYear ?? 'Date TBD',
     level: m.level ?? '',
     division: m.division,
-    detailsUrl: `https://www.meetscoresonline.com/results/${m.meetId}`,
+    detailsUrl: `${outboundOrigin(MSO_ORIGIN)}/results/${m.meetId}`,
     isImported: results[i].savedId !== undefined,
     ...results[i],
   }));
@@ -489,7 +490,7 @@ async function loadMsoMeet(
   }
   const meetId = msoMeetIdFromUrl(meet.detailsUrl);
   if (!meetId) return { error: 'Invalid meet link' };
-  return scrapeMeetDetails(`https://www.meetscoresonline.com/results/${meetId}`, {
+  return scrapeMeetDetails(`${outboundOrigin(MSO_ORIGIN)}/results/${meetId}`, {
     ...meet,
     name: '',
     level: '',

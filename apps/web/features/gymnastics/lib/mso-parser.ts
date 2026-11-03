@@ -30,7 +30,7 @@ export type ParsedDates = {
 
 export { APPARATUS_MAP };
 
-const MSO_ORIGIN = 'https://www.meetscoresonline.com';
+import { MSO_ORIGIN, outboundOrigin } from '@/lib/outbound';
 
 /**
  * Return the canonical MSO results URL for `url`, or null if it points
@@ -44,9 +44,10 @@ export function msoResultsUrl(url: string): string | null {
   } catch {
     return null;
   }
-  if (parsed.origin !== MSO_ORIGIN) return null;
+  const origin = outboundOrigin(MSO_ORIGIN);
+  if (parsed.origin !== origin) return null;
   if (!parsed.pathname.startsWith('/results/')) return null;
-  return `${MSO_ORIGIN}${parsed.pathname}${parsed.search}`;
+  return `${origin}${parsed.pathname}${parsed.search}`;
 }
 
 export function parseScoreRow(

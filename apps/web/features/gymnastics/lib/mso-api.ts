@@ -14,7 +14,7 @@
 // Transport
 // ---------------------------------------------------------------------------
 
-const BASE = 'https://www.meetscoresonline.com';
+import { MSO_ORIGIN, outboundOrigin } from '@/lib/outbound';
 
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
@@ -66,11 +66,12 @@ export async function msoQuery(
     ),
   });
 
-  const res = await fetch(`${BASE}/${endpoint.file}?_cpn=999999`, {
+  const base = outboundOrigin(MSO_ORIGIN);
+  const res = await fetch(`${base}/${endpoint.file}?_cpn=999999`, {
     method: 'POST',
     headers: {
       'User-Agent': USER_AGENT,
-      Referer: `${BASE}/`,
+      Referer: `${base}/`,
       'Content-Type': 'application/x-www-form-urlencoded',
       'X-Requested-With': 'XMLHttpRequest',
     },
