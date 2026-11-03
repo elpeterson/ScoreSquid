@@ -6,6 +6,7 @@ import { UserNav } from '@scoresquid/auth/components/user-nav';
 import { updateSetting } from '@/app/archery/actions/settings';
 import { ArcherSwitcher } from '@/features/archery/components/archer-switcher';
 import { ensureActiveArcher } from '@/app/archery/actions/archer';
+import { SUPPORT_URL } from '@/lib/support';
 
 export default async function MainLayout({
   children,
@@ -56,7 +57,7 @@ export default async function MainLayout({
             >
               Insights
             </Link>
-            <UserNav email={user.email} updateSetting={updateSetting} />
+            <UserNav email={user.email} updateSetting={updateSetting} supportUrl={SUPPORT_URL} />
           </div>
         </div>
       </header>

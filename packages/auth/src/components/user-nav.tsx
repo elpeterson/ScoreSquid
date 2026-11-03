@@ -15,7 +15,7 @@ import {
 } from '@scoresquid/ui/components/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@scoresquid/ui/components/avatar';
 import { Button } from '@scoresquid/ui/components/button';
-import { User, LogOut, Moon, Sun, Laptop } from 'lucide-react';
+import { User, LogOut, Moon, Sun, Laptop, Coffee } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { useSignOut } from './use-sign-out';
@@ -23,10 +23,13 @@ import { useSignOut } from './use-sign-out';
 export function UserNav({
   email,
   updateSetting,
+  supportUrl,
 }: {
   email: string | undefined;
   /** The app's settings action; saves the theme to its settings table. */
   updateSetting: (key: 'theme', value: string) => Promise<unknown>;
+  /** Where people can choose to support the app, opened in a new tab. Omit to hide it. */
+  supportUrl?: string;
 }) {
   const signOut = useSignOut();
   const { setTheme } = useTheme();
@@ -91,6 +94,18 @@ export function UserNav({
               </DropdownMenuSubContent>
             </DropdownMenuPortal>
           </DropdownMenuSub>
+
+          {supportUrl && (
+            <DropdownMenuItem asChild>
+              <a href={supportUrl} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                <Coffee className="mr-2 h-4 w-4" />
+                <span className="flex flex-col">
+                  <span>Support ScoreSquid</span>
+                  <span className="text-xs text-muted-foreground">Optional, on Ko-fi</span>
+                </span>
+              </a>
+            </DropdownMenuItem>
+          )}
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
