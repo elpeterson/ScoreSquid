@@ -6,6 +6,7 @@ import { UserNav } from '@scoresquid/auth/components/user-nav';
 import { updateSetting } from '@/app/gymnastics/actions/settings';
 import { GymnastSwitcher } from '@/features/gymnastics/components/gymnast-switcher';
 import { ensureActiveGymnast } from '@/app/gymnastics/actions/gymnast';
+import { SUPPORT_URL } from '@/lib/support';
 
 export default async function MainLayout({
   children,
@@ -58,7 +59,7 @@ export default async function MainLayout({
             >
               About
             </Link>
-            <UserNav email={user.email} updateSetting={updateSetting} />
+            <UserNav email={user.email} updateSetting={updateSetting} supportUrl={SUPPORT_URL} />
           </div>
         </div>
       </header>

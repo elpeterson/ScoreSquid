@@ -10,6 +10,7 @@ import {
 import { Button } from '@scoresquid/ui/components/button';
 import { Coffee } from 'lucide-react';
 import Link from 'next/link';
+import { SUPPORT_URL } from '@/lib/support';
 
 export default async function AboutPage() {
   const filePath = path.join(process.cwd(), 'docs/gymnastics/README.md');
@@ -63,7 +64,7 @@ export default async function AboutPage() {
                 className="bg-[#FF5E5B] hover:bg-[#FF5E5B]/90 text-white font-bold rounded-full"
               >
                 <Link
-                  href="https://ko-fi.com/elpeterson"
+                  href={SUPPORT_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
