@@ -4,6 +4,8 @@ import * as cheerio from 'cheerio';
 import { createClient } from '@scoresquid/auth/server';
 import { revalidatePath } from 'next/cache';
 import { ensureActiveGymnast } from './gymnast';
+import { isMsoAthleteId, isValidMsoSummary } from '@/features/gymnastics/lib/meet-form';
+import { isUuid } from '@/lib/validation';
 import { parseScoreRow, parseMeetDates, msoResultsUrl } from '@/features/gymnastics/lib/mso-parser';
 import { insertCompetitionWithScores } from '@/features/gymnastics/lib/competitions';
 import {
@@ -424,6 +426,7 @@ async function importMsoMeetApi(meet: MsoMeetSummary): Promise<ImportResult> {
  */
 export async function fetchMsoMeets(msoId: string): Promise<FetchMeetsResult> {
   if (!msoId) return { error: 'No MSO ID provided' };
+  if (!isMsoAthleteId(msoId)) return { error: 'That MSO ID should be numbers only' };
   try {
     const viaApi = await fetchMsoMeetsApi(msoId);
     if ('success' in viaApi) return viaApi;
@@ -436,6 +439,7 @@ export async function fetchMsoMeets(msoId: string): Promise<FetchMeetsResult> {
 }
 
 export async function importMsoMeet(meet: MsoMeetSummary): Promise<ImportResult> {
+  if (!isValidMsoSummary(meet)) return { error: 'That meet was not found' };
   // Scraped summaries have no meetId; use the scrape importer for those.
   if (!meet.meetId) return importMsoMeetScrape(meet);
   // JSON-sourced meet: use the API importer and surface its result. We do NOT
@@ -529,6 +533,7 @@ export async function previewMsoReimport(
   savedId: string,
   meet: MsoMeetSummary,
 ): Promise<ReimportPreview> {
+  if (!isUuid(savedId) || !isValidMsoSummary(meet)) return { error: 'That meet was not found' };
   const ctx = await activeGymnastContext();
   if (!ctx) return { error: 'Authentication required' };
 
@@ -548,6 +553,7 @@ export async function applyMsoReimport(
   meet: MsoMeetSummary,
   chosenKeys: string[],
 ): Promise<ImportResult> {
+  if (!isUuid(savedId) || !isValidMsoSummary(meet)) return { error: 'That meet was not found' };
   const ctx = await activeGymnastContext();
   if (!ctx) return { error: 'Authentication required' };
   if (!Array.isArray(chosenKeys)) return { error: 'Nothing was chosen' };
@@ -596,6 +602,7 @@ export async function previewMsoLink(
   savedId: string,
   meet: MsoMeetSummary,
 ): Promise<ReimportPreview> {
+  if (!isUuid(savedId) || !isValidMsoSummary(meet)) return { error: 'That meet was not found' };
   const ctx = await activeGymnastContext();
   if (!ctx) return { error: 'Authentication required' };
 
@@ -613,6 +620,7 @@ export async function applyMsoLink(
   meet: MsoMeetSummary,
   chosenKeys: string[],
 ): Promise<ImportResult> {
+  if (!isUuid(savedId) || !isValidMsoSummary(meet)) return { error: 'That meet was not found' };
   const ctx = await activeGymnastContext();
   if (!ctx) return { error: 'Authentication required' };
   if (!Array.isArray(chosenKeys)) return { error: 'Nothing was chosen' };
@@ -646,6 +654,7 @@ export async function rejectMsoSuggestion(
   savedId: string,
   meet: MsoMeetSummary,
 ): Promise<ImportResult> {
+  if (!isUuid(savedId) || !isValidMsoSummary(meet)) return { error: 'That meet was not found' };
   const ctx = await activeGymnastContext();
   if (!ctx) return { error: 'Authentication required' };
 

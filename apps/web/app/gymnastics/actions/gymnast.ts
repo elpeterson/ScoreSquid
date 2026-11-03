@@ -4,12 +4,16 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createClient } from '@scoresquid/auth/server';
 import { revalidatePath } from 'next/cache';
+import { isDiscipline, isMsoAthleteId, parseGymnastName } from '@/features/gymnastics/lib/meet-form';
+import { formText, isUuid } from '@/lib/validation';
+
+type ActionResult = { error?: string; success?: boolean };
 
 const COOKIE_NAME = 'scoresquid_active_gymnast';
 
 export async function setActiveGymnast(gymnastId: string) {
   const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, gymnastId);
+  if (isUuid(gymnastId)) cookieStore.set(COOKIE_NAME, gymnastId);
   redirect('/dashboard');
 }
 
@@ -28,7 +32,7 @@ export async function ensureActiveGymnast() {
 
   const currentId = await getActiveGymnastId();
 
-  if (currentId) {
+  if (isUuid(currentId)) {
     const { data: valid } = await supabase
       .from('gymnast_athletes')
       .select('id')
@@ -54,20 +58,20 @@ export async function ensureActiveGymnast() {
   return null;
 }
 
-export async function createGymnast(formData: FormData) {
+export async function createGymnast(formData: FormData): Promise<ActionResult> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: 'Not authenticated' };
 
-  const name = formData.get('name') as string;
-  const discipline = formData.get('discipline') as string;
-
-  if (!name) return { error: 'Name is required' };
+  const parsed = parseGymnastName(formData.get('name'));
+  if ('error' in parsed) return parsed;
+  const discipline = formData.get('discipline');
+  if (discipline && !isDiscipline(discipline)) return { error: 'That discipline is not valid' };
 
   const { data: newId, error } = await supabase.rpc('create_gymnast', {
-    p_name: name,
+    p_name: parsed.name,
     p_discipline: discipline || 'MAG',
   });
 
@@ -81,22 +85,24 @@ export async function createGymnast(formData: FormData) {
   return { success: true };
 }
 
-export async function updateGymnast(id: string, formData: FormData) {
+export async function updateGymnast(id: string, formData: FormData): Promise<ActionResult> {
+  if (!isUuid(id)) return { error: 'Gymnast not found' };
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: 'Not authenticated' };
 
-  const name = formData.get('name') as string;
-  const mso_id = formData.get('mso_id') as string;
-  const discipline = formData.get('discipline') as string;
-
-  if (!name) return { error: 'Name is required' };
+  const parsed = parseGymnastName(formData.get('name'));
+  if ('error' in parsed) return parsed;
+  const mso_id = formText(formData.get('mso_id'));
+  if (mso_id && !isMsoAthleteId(mso_id)) return { error: 'That MSO ID should be numbers only' };
+  const discipline = formData.get('discipline');
+  if (discipline && !isDiscipline(discipline)) return { error: 'That discipline is not valid' };
 
   const { error } = await supabase.rpc('update_gymnast', {
     p_id: id,
-    p_name: name,
+    p_name: parsed.name,
     p_mso_id: mso_id || null,
     p_discipline: discipline || null,
   });
@@ -108,7 +114,8 @@ export async function updateGymnast(id: string, formData: FormData) {
   return { success: true };
 }
 
-export async function deleteGymnast(id: string) {
+export async function deleteGymnast(id: string): Promise<ActionResult> {
+  if (!isUuid(id)) return { error: 'Gymnast not found' };
   const supabase = await createClient();
   const {
     data: { user },

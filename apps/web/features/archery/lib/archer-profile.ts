@@ -1,3 +1,4 @@
+import { isRealDate } from '@/lib/validation';
 import { normaliseAlt } from './betweenends/entries';
 
 export type ArcherDetails = {
@@ -10,12 +11,6 @@ const MAX_NAME = 100;
 const MAX_NUMBER = 20;
 
 const field = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
-
-const isRealDate = (value: string) => {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const date = new Date(`${value}T00:00:00Z`);
-  return !isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
-};
 
 /**
  * Validate an archer's details from a form. `latestDate` is the last allowed start
