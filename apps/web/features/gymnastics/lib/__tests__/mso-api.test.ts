@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  historyEntry,
   extractRows,
   parseGymnastMeets,
   parseMeetResult,
@@ -183,5 +184,45 @@ describe('parseMeetResult', () => {
     const r = parseMeetResult(rows, '7')!;
     expect(r.isMens).toBe(false);
     expect(r.scores).toHaveLength(0);
+  });
+});
+
+describe('historyEntry', () => {
+  const wag = parseGymnastMeets(
+    JSON.parse(readFileSync(join(__dirname, 'fixtures', 'lookup_gymnast_wag.json'), 'utf8')).results[0].result.row,
+  );
+
+  it("lists a women's meet with its month, clean level and no division (SQ-050)", () => {
+    expect(historyEntry(wag[0], '5550001', 'WAG')).toEqual({
+      name: '2026 Sample Snowflake Classic',
+      dateStr: '2-26',
+      level: '6',
+      division: null,
+      path: '/results/90001/5550001',
+    });
+    expect(historyEntry(wag[1], '5550001', 'WAG').level).toBe('XG');
+  });
+
+  it("gives a women's meet no meet ID, so it imports from the athlete's results page", () => {
+    expect(historyEntry(wag[0], '5550001', 'WAG').meetId).toBeUndefined();
+  });
+
+  it("keeps men's meets on the JSON import, with level and division split", () => {
+    const [mens] = parseGymnastMeets([
+      { meetid: '10', meetname: 'Example Invitational', level: '4D1', meetdate_monthyear: '3-25' },
+    ]);
+    expect(historyEntry(mens, '1001', 'MAG')).toEqual({
+      meetId: '10',
+      name: 'Example Invitational',
+      dateStr: '3-25',
+      level: '4',
+      division: '1',
+      path: '/results/10',
+    });
+  });
+
+  it('says Date TBD when MSO gives no month', () => {
+    const [m] = parseGymnastMeets([{ meetid: '11', meetname: 'Undated', level: '5' }]);
+    expect(historyEntry(m, '5550001', 'WAG').dateStr).toBe('Date TBD');
   });
 });

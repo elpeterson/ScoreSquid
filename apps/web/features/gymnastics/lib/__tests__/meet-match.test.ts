@@ -5,6 +5,7 @@ import {
   nameSimilarity,
   suggestSavedMeets,
   msoMeetIdFromUrl,
+  monthYearLabel,
   type MsoMeetRef,
   type SavedMeet,
 } from '../meet-match';
@@ -172,5 +173,21 @@ describe('suggestSavedMeets', () => {
       saved({ id: 'rejected', rejected_mso_meet_ids: ['100'] }),
     ];
     expect(suggestSavedMeets(meet(), list, new Set(['claimed']))).toEqual([]);
+  });
+});
+
+describe('monthYearLabel', () => {
+  it("reads MSO's month and year", () => {
+    expect(monthYearLabel('2-26')).toBe('Feb 2026');
+    expect(monthYearLabel('12-25')).toBe('Dec 2025');
+    expect(monthYearLabel(' 1-23 ')).toBe('Jan 2023');
+  });
+
+  it('gives null for anything else', () => {
+    expect(monthYearLabel('Date TBD')).toBeNull();
+    expect(monthYearLabel('13-25')).toBeNull();
+    expect(monthYearLabel('0-25')).toBeNull();
+    expect(monthYearLabel('Feb 13, 2026')).toBeNull();
+    expect(monthYearLabel(null)).toBeNull();
   });
 });

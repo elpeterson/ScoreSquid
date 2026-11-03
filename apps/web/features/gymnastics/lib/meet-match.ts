@@ -47,6 +47,15 @@ function hintMonth(hint: string | null): number | null {
   return startDate ? isoMonth(startDate) : null;
 }
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** MSO's `2-26` as `Feb 2026`, or null when it isn't a month and year. */
+export function monthYearLabel(hint: string | null | undefined): string | null {
+  const match = /^(\d{1,2})-(\d{2})$/.exec(hint?.trim() ?? '');
+  const month = match ? MONTHS[Number(match[1]) - 1] : undefined;
+  return month ? `${month} 20${match![2]}` : null;
+}
+
 function isoMonth(value: string | null): number | null {
   const match = /^(\d{4})-(\d{2})/.exec(value ?? '');
   return match ? Number(match[1]) * 12 + Number(match[2]) - 1 : null;

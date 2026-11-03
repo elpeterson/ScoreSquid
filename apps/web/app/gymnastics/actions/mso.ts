@@ -26,6 +26,7 @@ import {
 } from '@/features/gymnastics/lib/meet-diff';
 import {
   msoQuery,
+  historyEntry,
   parseGymnastMeets,
   parseMeetResult,
 } from '@/features/gymnastics/lib/mso-api';
@@ -284,9 +285,8 @@ async function fetchMsoMeetsApi(msoId: string): Promise<FetchMeetsResult> {
   const ctx = await activeGymnastContext();
   if (!ctx) return { error: 'Authentication required' };
 
-  // The JSON slot mapping is men's-artistic only; women's stays on the scrape.
-  if (ctx.discipline === 'WAG') return fetchMsoMeetsScrape(msoId);
-
+  // Both disciplines list meets from the JSON history, which has dates and clean
+  // levels. Women's scores still come from the results page (see historyEntry).
   const rows = await msoQuery('msoGymnast', 'lookup_gymnast', {
     LookupIndex: 1,
     p_gymnastid: msoId,
@@ -302,18 +302,17 @@ async function fetchMsoMeetsApi(msoId: string): Promise<FetchMeetsResult> {
     history.map((m) => ({ meetId: m.meetId, name: m.meetName, dateHint: m.monthYear })),
   );
 
-  const meets: MsoMeetSummary[] = history.map((m, i) => ({
-    id: m.meetId,
-    meetId: m.meetId,
-    athleteMsoId: msoId,
-    name: m.meetName,
-    dateStr: m.monthYear ?? 'Date TBD',
-    level: m.level ?? '',
-    division: m.division,
-    detailsUrl: `${outboundOrigin(MSO_ORIGIN)}/results/${m.meetId}`,
-    isImported: results[i].savedId !== undefined,
-    ...results[i],
-  }));
+  const meets: MsoMeetSummary[] = history.map((m, i) => {
+    const { path, ...entry } = historyEntry(m, msoId, ctx.discipline);
+    return {
+      id: m.meetId,
+      ...entry,
+      athleteMsoId: msoId,
+      detailsUrl: `${outboundOrigin(MSO_ORIGIN)}${path}`,
+      isImported: results[i].savedId !== undefined,
+      ...results[i],
+    };
+  });
 
   return { success: true, meets, linkable };
 }
