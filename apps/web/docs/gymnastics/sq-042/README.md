@@ -9,7 +9,8 @@ responses. No responses, IDs or names are kept in the repo.
 
 **Status:** finding 1 is fixed (SQ-048) and finding 2 is fixed (SQ-049, with a
 migration that cleans levels already saved). Finding 3 is fixed (SQ-050: women's meet
-lists come from `lookup_gymnast`, which has dates). Finding 4 is SQ-051.
+lists come from `lookup_gymnast`, which has dates). Finding 4 is fixed (SQ-051:
+women's levels are picked from a list of MSO's codes).
 
 ## How women's import works today
 - Women's (`WAG`) uses the HTML scrape for both the meet list and the import, never

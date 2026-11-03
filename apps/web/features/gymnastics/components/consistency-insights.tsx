@@ -18,9 +18,8 @@ import {
 import {
   MAG_APPARATUS,
   WAG_APPARATUS,
-  LEVEL_OPTIONS,
-  ELITE_LEVEL_OPTIONS,
   TRACK_OPTIONS,
+  levelLabel,
 } from '@/features/gymnastics/lib/constants';
 import {
   apparatusWithData,
@@ -35,12 +34,6 @@ import { ConsistencyChart } from '@/features/gymnastics/components/consistency-c
 interface ConsistencyInsightsProps {
   competitions: CompetitionRow[];
   discipline: string;
-}
-
-/** Show "Level 4" for a bare number, or the friendly elite/special name. */
-function levelLabel(value: string): string {
-  if (LEVEL_OPTIONS.includes(value)) return `Level ${value}`;
-  return ELITE_LEVEL_OPTIONS.find((o) => o.value === value)?.label ?? value;
 }
 
 /** Friendly name for a division/track value: "1"/"2" or Elite/Junior/Senior. */

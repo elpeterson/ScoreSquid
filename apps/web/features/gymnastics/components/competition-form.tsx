@@ -28,6 +28,7 @@ import {
   WAG_APPARATUS,
   LEVEL_OPTIONS,
   ELITE_LEVEL_OPTIONS,
+  WAG_LEVEL_OPTIONS,
   qualifierForLevel,
 } from '@/features/gymnastics/lib/constants';
 
@@ -69,13 +70,13 @@ export function CompetitionForm({
   const [division, setDivision] = useState(initialData?.division ?? '');
   const isWAG = discipline === 'WAG';
 
-  // Men's level dropdown: numeric levels + elite/special codes. Any pre-existing
-  // value not in those sets (e.g. an imported oddity) is preserved as an option
-  // so editing never silently drops it.
-  const knownLevels = [
-    ...LEVEL_OPTIONS,
-    ...ELITE_LEVEL_OPTIONS.map((o) => o.value),
-  ];
+  // Level dropdowns mirror MSO's values: men's numeric levels + elite/special codes,
+  // women's levels 1-10 + Xcel codes. Any pre-existing value not in the list (e.g.
+  // "Gold" typed before there was a list) is kept as an option, so editing never
+  // silently drops it.
+  const knownLevels = isWAG
+    ? WAG_LEVEL_OPTIONS.map((o) => o.value)
+    : [...LEVEL_OPTIONS, ...ELITE_LEVEL_OPTIONS.map((o) => o.value)];
   const extraLevel =
     level && !knownLevels.includes(level) ? [level] : [];
 
@@ -162,23 +163,34 @@ export function CompetitionForm({
             </div>
 
             {/*
-              Men's uses dropdowns that mirror MSO's real level values: numeric
-              levels 3-10 plus elite/special codes, and a context-aware second
-              field (Division 1/2 for compulsory levels, Elite/Junior/Senior
-              track for optional levels). Women's keeps free text so Xcel levels
-              aren't forced into the men's vocabulary — the graph partitions on
-              whatever strings are entered either way.
+              Both disciplines pick from dropdowns that mirror MSO's real level
+              values, so a typed meet groups with an imported one in Insights.
+              Men's: numeric levels 3-10 plus elite/special codes, and a
+              context-aware second field (Division 1/2 for compulsory levels,
+              Elite/Junior/Senior track for optional levels). Women's: levels
+              1-10 and Xcel codes, with a free-text division, as MSO's women's
+              division is a per-meet age group.
             */}
             <div className="grid w-full items-center gap-1.5">
               <Label htmlFor="level">Level (Optional)</Label>
               {isWAG ? (
-                <Input
-                  type="text"
-                  id="level"
-                  value={level}
-                  onChange={(e) => setLevel(e.target.value)}
-                  placeholder="e.g. Level 4 or Gold"
-                />
+                <Select value={level} onValueChange={setLevel}>
+                  <SelectTrigger id="level">
+                    <SelectValue placeholder="Select level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {extraLevel.map((l) => (
+                      <SelectItem key={l} value={l}>
+                        {l}
+                      </SelectItem>
+                    ))}
+                    {WAG_LEVEL_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               ) : (
                 <Select
                   value={level}

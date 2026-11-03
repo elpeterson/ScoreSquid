@@ -63,12 +63,12 @@ export async function waitForToasts(page: Page) {
 /**
  * On a touch screen, every control offers a tap area of at least 40 px each way. Links
  * in running text, and checkboxes, radios and switches (tapped through their labels),
- * are left out.
+ * are left out, as is the hidden native select a dropdown keeps for its form.
  */
 export async function expectTouchTargets(page: Page) {
   const small = await page.evaluate(() => {
     const controls = document.querySelectorAll(
-      'button:not([role="checkbox"]):not([role="switch"]):not([role="radio"]), [role="tab"], [role="combobox"], a.inline-flex, header a, select, input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"])',
+      'button:not([role="checkbox"]):not([role="switch"]):not([role="radio"]), [role="tab"], [role="combobox"], a.inline-flex, header a, select:not([aria-hidden="true"]), input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"])',
     );
     return Array.from(controls)
       .filter((el) => {

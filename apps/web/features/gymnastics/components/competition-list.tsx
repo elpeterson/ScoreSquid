@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@scoresquid/ui/components/card';
 import { Button } from '@scoresquid/ui/components/button';
 import { CompetitionActions } from '@/features/gymnastics/components/competition-actions';
-import { MAG_APPARATUS, WAG_APPARATUS, COMPETITIONS_PAGE_SIZE } from '@/features/gymnastics/lib/constants';
+import { MAG_APPARATUS, WAG_APPARATUS, COMPETITIONS_PAGE_SIZE, levelLabel } from '@/features/gymnastics/lib/constants';
 import { loadMoreCompetitions } from '@/app/gymnastics/(main)/dashboard/actions';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/dates';
@@ -106,7 +106,7 @@ export function CompetitionList({
                   )}
                   {comp.level && (
                     <span className="ml-2 inline-flex items-center rounded-full bg-secondary/10 px-2 py-0.5 text-xs font-medium text-secondary ring-1 ring-inset ring-secondary/20">
-                      {comp.level}
+                      {levelLabel(comp.level)}
                     </span>
                   )}
                 </p>
