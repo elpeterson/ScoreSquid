@@ -8,6 +8,7 @@ import { createBeClient } from '@/features/archery/lib/betweenends/client';
 import { isStale } from '@/features/archery/lib/betweenends/crawl';
 import { rankingEntries } from '@/features/archery/lib/betweenends/entries';
 import {
+  collapseRepeats,
   dropRepeatedCombined,
   importProblem,
   planRounds,
@@ -111,6 +112,8 @@ export type BeResult = {
   division_code: string | null;
   arrows_per_end: number | null;
   total: number | null;
+  /** How many Between Ends listings show this one result. */
+  listings: number;
   relation: Relation;
   problem: string | null;
 };
@@ -155,7 +158,7 @@ async function loadStoredMatches(supabase: Supabase, userId: string, athleteId: 
     const key = `${row.event_id}-${row.aid}`;
     if (!latest.has(key)) latest.set(key, row);
   }
-  return dropRepeatedCombined([...latest.values()]).sort((a, b) =>
+  return collapseRepeats(dropRepeatedCombined([...latest.values()])).sort((a, b) =>
     a.tournament_date < b.tournament_date ? 1 : -1,
   );
 }
@@ -185,6 +188,7 @@ async function loadResults(supabase: Supabase, userId: string, athleteId: string
     division_code: m.division_code,
     arrows_per_end: m.arrows_per_end,
     total: m.total,
+    listings: 1 + (m.copies?.length ?? 0),
     relation: relateToExisting(m, existing),
     problem: importProblem(m),
   }));
