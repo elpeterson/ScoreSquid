@@ -81,17 +81,32 @@ describe('setups and trends', () => {
     expect(groups.map((g) => g.label)).toContain('Barebow · Indoor 18m · 60cm');
   });
 
-  it('orders a setup chronologically and flags personal bests by arrow average', () => {
+  it('orders a setup chronologically and marks only the current best arrow average', () => {
     const outdoor = trendForSetup(events, setupKey(events[3]));
     expect(outdoor.map((p) => p.eventId)).toEqual(['spirit', 'noreaster']);
     // 235/72 then 203/36: fewer arrows but a much higher average.
-    expect(outdoor.map((p) => p.personalBest)).toEqual([true, true]);
+    expect(outdoor.map((p) => p.personalBest)).toEqual([false, true]);
 
     const indoor = trendForSetup(events, setupKey(events[1]));
     expect(indoor.map((p) => [p.eventId, p.total, p.personalBest])).toEqual([
-      ['cup', 207, true],
+      ['cup', 207, false],
       ['aces', 269, true],
     ]);
+  });
+
+  it('marks one PB however many records were broken on the way', () => {
+    const rising = ['7', '8', '9', 'X'].map((a, i) => fromFixtureShape(`e${i}`, `2026-0${i + 1}-01`, [a, a, a]));
+    expect(trendForSetup(rising, setupKey(rising[0]!)).map((p) => p.personalBest)).toEqual([false, false, false, true]);
+  });
+
+  it('keeps the PB on an earlier best when a later result falls short or ties', () => {
+    const shots = [['9', '9', '9'], ['7', '7', '7'], ['9', '9', '9']].map((a, i) => fromFixtureShape(`e${i}`, `2026-0${i + 1}-01`, a));
+    expect(trendForSetup(shots, setupKey(shots[0]!)).map((p) => p.personalBest)).toEqual([true, false, false]);
+  });
+
+  it('marks no PB with one result in a setup', () => {
+    const one = [fromFixtureShape('a', '2026-01-01', ['X', 'X', 'X'])];
+    expect(trendForSetup(one, setupKey(one[0]!))[0]!.personalBest).toBe(false);
   });
 
   it('breaks arrows down by target color', () => {

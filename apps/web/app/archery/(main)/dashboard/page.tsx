@@ -11,6 +11,7 @@ import { repeatedScorecards, suggestedKeep } from '@/features/archery/lib/repeat
 import {
   computeEventStats,
   eventDate,
+  isComparable,
   setupKey,
   setupLabel,
   trendForSetup,
@@ -45,13 +46,12 @@ export default async function Dashboard() {
     return <div className="p-8 text-red-500">Error loading scorecards.</div>;
   }
 
-  // Personal bests are judged within a setup, at the time they were shot. A
-  // setup's first-ever event is trivially a "best", so it needs company to count.
+  // A PB is the current best in a setup, judged as Insights does: only on results
+  // shot in full, so a part-shot card with a few good arrows can't take it.
+  const comparable = events.filter(isComparable);
   const personalBests = new Set<string>();
-  for (const key of new Set(events.map(setupKey))) {
-    const trend = trendForSetup(events, key);
-    if (trend.length < 2) continue;
-    for (const p of trend) if (p.personalBest) personalBests.add(p.eventId);
+  for (const key of new Set(comparable.map(setupKey))) {
+    for (const p of trendForSetup(comparable, key)) if (p.personalBest) personalBests.add(p.eventId);
   }
 
   const repeats = repeatedScorecards(events).map((group) => ({
