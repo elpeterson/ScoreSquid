@@ -172,7 +172,7 @@ export type TrendPoint = {
   percentOfMax: number;
   hitRate: number;
   endStdDev: number;
-  /** True when this event set a new best arrow average for its setup. */
+  /** True for the setup's current best arrow average, once there are two or more to compare. */
   personalBest: boolean;
   roundTotals: number[];
   rings: RingShares;
@@ -205,17 +205,21 @@ export function ringShares(distribution: Record<Arrow, number>): RingShares {
   return shares;
 }
 
-/** Chronological trend for one setup, with personal bests flagged as they happened. */
+/**
+ * Chronological trend for one setup. Only the current best arrow average is a personal
+ * best, and the earlier result keeps it on a tie. Past records aren't marked, or nearly
+ * every result would carry one. Pass only comparable events (see isComparable).
+ */
 export function trendForSetup(events: EventRow[], key: string): TrendPoint[] {
   const inSetup = events
     .filter((e) => setupKey(e) === key)
     .sort((a, b) => (eventDate(a) ?? '').localeCompare(eventDate(b) ?? ''));
 
-  let best = -Infinity;
-  return inSetup.map((e) => {
-    const s = computeEventStats(e);
-    const personalBest = s.arrowAverage > best;
-    if (personalBest) best = s.arrowAverage;
+  const stats = inSetup.map(computeEventStats);
+  const bestIndex = stats.reduce((best, s, i) => (s.arrowAverage > stats[best]!.arrowAverage ? i : best), 0);
+  return inSetup.map((e, i) => {
+    const s = stats[i]!;
+    const personalBest = inSetup.length >= 2 && i === bestIndex;
     return {
       eventId: e.id,
       name: e.name,

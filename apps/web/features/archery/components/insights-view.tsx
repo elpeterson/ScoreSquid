@@ -218,7 +218,7 @@ export function InsightsView({
                   dot={(props: { cx?: number; cy?: number; payload?: TrendPoint; index?: number }) => {
                     const { cx, cy, payload, index } = props;
                     if (cx == null || cy == null) return <g key={index} />;
-                    const pb = payload?.personalBest && index !== 0;
+                    const pb = payload?.personalBest;
                     return (
                       <circle
                         key={index}
@@ -238,7 +238,7 @@ export function InsightsView({
           {points.length >= 2 && (
             <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
               <span className="inline-block h-2.5 w-2.5 rounded-full bg-secondary" />
-              New personal best (arrow average)
+              Personal best (arrow average)
             </p>
           )}
         </CardContent>
@@ -343,7 +343,7 @@ export function InsightsView({
                   </td>
                   <td className="py-2 text-right">
                     <span className="inline-flex items-center gap-1">
-                      {p.personalBest && p !== points[0] && (
+                      {p.personalBest && (
                         <Trophy className="h-3 w-3 text-secondary" />
                       )}
                       {formatNumber(p.arrowAverage)}
