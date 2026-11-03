@@ -30,6 +30,17 @@ export type ParsedDates = {
 
 export { APPARATUS_MAP };
 
+/**
+ * The level from an MSO meet list's "Level Division" text, which also holds the
+ * meet's age group and a screen-reader label: `6 Group 2 (opens meet scores)` gives
+ * `6`, and `XG Penny` gives `XG`. MSO's levels are single words (`1` to `10`, the
+ * Xcel codes, men's `4D1`); the age group is set per meet, so it's dropped.
+ */
+export function msoListLevel(raw: string | null | undefined): string | null {
+  const text = (raw ?? '').replace(/\(\s*opens meet scores\s*\)/i, '').trim();
+  return text.split(/\s+/)[0] || null;
+}
+
 import { MSO_ORIGIN, outboundOrigin } from '@/lib/outbound';
 
 /**

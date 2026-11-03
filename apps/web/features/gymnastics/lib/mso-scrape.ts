@@ -2,7 +2,7 @@
 // Server-only, as it loads cheerio. Pure: the caller fetches the page.
 
 import * as cheerio from 'cheerio';
-import { parseScoreRow, type ParsedScore } from './mso-parser';
+import { msoListLevel, parseScoreRow, type ParsedScore } from './mso-parser';
 
 /** A meet from an athlete's `/Athlete.MyScores/<id>` page. */
 export type ScrapedMeetLink = {
@@ -26,11 +26,14 @@ export function parseMeetListHtml(html: string): ScrapedMeetLink[] {
 
     const cols = row.find('td');
     const name = $(cols[0]).text().trim() || link.text().trim();
-    const level = $(cols[2]).text().trim();
+    const levelCell = $(cols[2]);
+    const cellText = levelCell.text().trim();
     const dateStr = (cols.length > 4 && $(cols[4]).text().trim()) || 'Date TBD';
 
-    if (name === level && name.length < 5) return;
+    if (name === cellText && name.length < 5) return;
     if (name && href && !meets.some((m) => m.href === href)) {
+      // MSO marks the level in its own span; the cell also holds the age group.
+      const level = msoListLevel(levelCell.find('span.level').first().text()) ?? msoListLevel(cellText) ?? '';
       meets.push({ href, name, level, dateStr });
     }
   });
