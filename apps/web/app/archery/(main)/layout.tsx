@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@scoresquid/auth/server';
 import Link from 'next/link';
+import { SportLogo } from '@/features/shared/sport-logo';
 import { UserNav } from '@scoresquid/auth/components/user-nav';
 import { updateSetting } from '@/app/archery/actions/settings';
 import { ArcherSwitcher } from '@/features/archery/components/archer-switcher';
@@ -37,11 +38,8 @@ export default async function MainLayout({
               href="/dashboard"
               className="hover:opacity-80 transition-opacity shrink-0"
             >
-              <h1 className="text-xl font-bold text-white tracking-wide cursor-pointer hidden md:block">
-                ScoreSquid Archery
-              </h1>
-              <h1 className="text-xl font-bold text-white tracking-wide cursor-pointer md:hidden">
-                Arc
+              <h1 className="text-xl font-bold text-white tracking-wide cursor-pointer">
+                <SportLogo sport="Archery" tone="white" compact />
               </h1>
             </Link>
 

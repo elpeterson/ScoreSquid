@@ -1,14 +1,13 @@
 import { AuthButton } from '@/features/gymnastics/components/auth-button';
 import Link from 'next/link';
+import { SportLogo } from '@/features/shared/sport-logo';
 
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex items-center justify-between p-6 lg:px-8 bg-white border-b border-gray-100">
         <div className="flex lg:flex-1">
-          <span className="text-xl font-bold text-indigo-600">
-            ScoreSquid Gymnastics
-          </span>
+          <SportLogo sport="Gymnastics" tone="dark" className="text-xl font-bold text-indigo-600" />
         </div>
         <div className="flex flex-1 justify-end">
           <AuthButton />

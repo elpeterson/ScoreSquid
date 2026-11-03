@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, type ReactNode } from 'react';
 import { Button } from '@scoresquid/ui/components/button';
 import { Input } from '@scoresquid/ui/components/input';
 import { Label } from '@scoresquid/ui/components/label';
@@ -18,12 +18,13 @@ import type { ActionResult } from '../actions';
 type Action = (formData: FormData) => Promise<ActionResult>;
 
 export function LoginScreen({
-  appName,
+  brand,
   tagline,
   actions,
   initialError = null,
 }: {
-  appName: string;
+  /** The app's logo and name, or plain text. */
+  brand: ReactNode;
   tagline: string;
   actions: { login: Action; signup: Action; resetPassword: Action };
   /** From `loginErrorMessage(searchParams.error)`. */
@@ -73,7 +74,7 @@ export function LoginScreen({
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-primary">
-            {appName}
+            {brand}
           </CardTitle>
           <CardDescription>
             {view === 'forgot' ? 'Reset your password' : tagline}
