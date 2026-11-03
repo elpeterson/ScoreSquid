@@ -1,7 +1,8 @@
 import { expect, expectNoSidewaysScroll, msoRequestCount, signIn, test, waitForToasts } from './support/app';
 import { addGymnast, addMeet } from './support/seed';
 
-// The MSO stand-in serves the made-up unit-test fixtures for Athlete ID 1001.
+// The MSO stand-in serves the made-up unit-test fixtures for Athlete ID 1001 (men's)
+// and 5550001 (women's: a JSON history, an athlete page and one results page).
 const MSO_ID = '1001';
 
 test('a parent adds a gymnast @phone', async ({ page, account }) => {
@@ -55,6 +56,9 @@ test("a women's meet keeps its MSO ID, so it re-imports, and an older import is 
   await page.getByRole('button', { name: 'Sync Meets' }).click();
   const meet = page.locator('div.border.rounded-lg', { hasText: '2026 Sample Snowflake Classic' });
   await expect(meet).toBeVisible();
+  // Each women's meet shows when it was, from MSO's history (SQ-050).
+  await expect(meet).toContainText('Level 6 · Feb 2026');
+  await expect(page.getByText('Date TBD')).toHaveCount(0);
 
   const { data: linked } = await account.db.from('gym_competitions').select('mso_meet_id').eq('id', older).single();
   expect(linked!.mso_meet_id, 'the older import is given its MSO ID on sync').toBe('90002');
@@ -92,7 +96,7 @@ test("a hand-entered women's meet fills from MSO, and a wrong suggestion is reme
   const gymnast = await addGymnast(account, 'Riley Madeup', 'WAG', '5550001');
   // Similar names, so each is suggested for one MSO meet. Neither has an MSO ID.
   const live = await addMeet(account, gymnast, { name: 'Snowflake Classic', date: '2026-02-13' }, { vault: 8.95 });
-  const other = await addMeet(account, gymnast, { name: 'Made-Up Penny Invitational', date: '2024-11-02' }, { vault: 9 });
+  const other = await addMeet(account, gymnast, { name: 'Made-Up Penny Invitational', date: '2025-01-20' }, { vault: 9 });
   await signIn(page, 'gymnastics', account.email);
 
   await page.goto('/import');

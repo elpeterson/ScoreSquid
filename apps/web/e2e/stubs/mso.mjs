@@ -14,7 +14,8 @@ const port = Number(process.env.E2E_MSO_PORT ?? 4010);
 
 const requests = [];
 
-// Women's import reads MSO's HTML pages. The made-up athlete page links to meets
+// Women's meet lists come from lookup_gymnast (or the athlete page if that fails),
+// and their scores from MSO's HTML results pages. The made-up history links to meets
 // 90001 and 90002; only 90001 has a results page.
 const WAG_ATHLETE = '5550001';
 const html = (name) => fs.readFileSync(path.join(fixtures, `${name}.html`), 'utf8');
@@ -50,6 +51,7 @@ http
       }
 
       if (req.url.startsWith('/Ajax.ProjectsJson.msoGymnast.aspx') && params.query_name === 'lookup_gymnast') {
+        if (params.p_gymnastid === WAG_ATHLETE) return respond(res, 200, read('lookup_gymnast_wag'));
         const body = read('lookup_gymnast');
         for (const row of body.results[0].result.row) row.gymnastid = params.p_gymnastid;
         return respond(res, 200, body);

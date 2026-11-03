@@ -15,6 +15,7 @@
 // ---------------------------------------------------------------------------
 
 import { MSO_ORIGIN, outboundOrigin } from '@/lib/outbound';
+import { msoListLevel } from './mso-parser';
 
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
@@ -166,6 +167,8 @@ export type MsoMeetHistory = {
   meetName: string;
   level: string | null;
   division: string | null;
+  /** MSO's `level` as given, before the men's split into level and division. */
+  rawLevel: string | null;
   monthYear: string | null;
 };
 
@@ -185,10 +188,43 @@ export function parseGymnastMeets(
       meetName: r.meetname ?? '',
       level,
       division,
+      rawLevel: r.level?.trim() || null,
       monthYear: r.meetdate_monthyear?.trim() || null,
     });
   }
   return out;
+}
+
+/** How a meet from the history appears in the list, and how it will be imported. */
+export type HistoryEntry = {
+  /** Set only when the meet imports through the JSON API (men's). */
+  meetId?: string;
+  name: string;
+  dateStr: string;
+  level: string;
+  division: string | null;
+  /** The MSO page for this meet, from the site root. */
+  path: string;
+};
+
+/**
+ * One meet from `lookup_gymnast`, ready for the import list. Men's meets import by
+ * meet ID through the JSON API. Women's import from the athlete's own results page,
+ * as the JSON score mapping is men's only, so they carry no meet ID and link to
+ * `/results/<meet>/<athlete>`. A women's level is kept whole: MSO's women's `div` is
+ * a per-meet age group, never a division.
+ */
+export function historyEntry(m: MsoMeetHistory, athleteId: string, discipline: string): HistoryEntry {
+  const common = { name: m.meetName, dateStr: m.monthYear ?? 'Date TBD' };
+  if (discipline === 'WAG') {
+    return {
+      ...common,
+      level: msoListLevel(m.rawLevel) ?? '',
+      division: null,
+      path: `/results/${m.meetId}/${athleteId}`,
+    };
+  }
+  return { ...common, meetId: m.meetId, level: m.level ?? '', division: m.division, path: `/results/${m.meetId}` };
 }
 
 export type MsoApparatusScore = {
