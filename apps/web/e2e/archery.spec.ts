@@ -92,6 +92,64 @@ test('repeated scorecards saved earlier can be cut down to one (SQ-032)', async 
   await expect(page.locator('a[href^="/events/"] h3')).toHaveText('Made Up Nationals Final');
 });
 
+test('detailed arrow colors tell a 10 from a 9 and follow the account (SQ-037)', async ({ page, account }) => {
+  const archer = await addArcher(account, 'Pat Madeup');
+  const { error } = await account.db.rpc('import_scorecard', {
+    payload: {
+      event: {
+        athlete_id: archer, name: 'Made Up Club Night', start_date: '2025-03-01', shot_on: '2025-03-01', environment: 'outdoor',
+        bow_style: 'recurve', distance_m: 70, face_cm: 122, arrows_per_end: 3, bonus_labels: [], source: 'manual',
+      },
+      rounds: [{ round_number: 1, total: 29, bonus: [], ends: [{ end_number: 1, arrows: ['X', '10', '9'] }] }],
+    },
+  });
+  expect(error).toBeNull();
+
+  const chip = (value: string) => page.locator('table span.rounded-full').filter({ hasText: new RegExp(`^${value}$`) }).first();
+  const background = (value: string) => chip(value).evaluate((el) => getComputedStyle(el).backgroundColor);
+  const dotShown = () =>
+    chip('X').evaluate((el) => {
+      const dot = el.querySelector('span[aria-hidden="true"]');
+      return !!dot && getComputedStyle(dot).display !== 'none';
+    });
+  const openScorecard = async () => {
+    await page.goto('/dashboard');
+    await page.locator('a[href^="/events/"]').first().click();
+    await expect(chip('9')).toBeVisible();
+  };
+
+  await signIn(page, 'archery', account.email);
+  await openScorecard();
+  // Standard by default: one gold for the whole ring, as on the target face.
+  expect(await background('10')).toBe(await background('9'));
+  expect(await dotShown()).toBe(false);
+
+  await page.goto('/account?tab=display');
+  await page.getByRole('switch', { name: 'Detailed arrow colors' }).click();
+  await expect
+    .poll(async () => (await account.db.from('user_settings').select('detailed_arrow_colors').single()).data?.detailed_arrow_colors)
+    .toBe(true);
+
+  await openScorecard();
+  expect(await background('10')).not.toBe(await background('9'));
+  expect(await dotShown()).toBe(true);
+  // The number stays readable on the light shade (WCAG AA).
+  const ratio = await chip('9').evaluate((el) => {
+    const rgb = (c: string) => c.match(/\d+/g)!.slice(0, 3).map(Number);
+    const lum = (c: string) => {
+      const [r, g, b] = rgb(c).map((v) => {
+        const s = v / 255;
+        return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+    };
+    const style = getComputedStyle(el);
+    const [hi, lo] = [lum(style.backgroundColor), lum(style.color)].sort((a, b) => b - a);
+    return (hi! + 0.05) / (lo! + 0.05);
+  });
+  expect(ratio).toBeGreaterThanOrEqual(4.5);
+});
+
 test('a parent imports a scorecard PDF, sees it in Insights and deletes it', async ({ page, account }, testInfo) => {
   await addArcher(account, 'Test Archer');
   const items = JSON.parse(

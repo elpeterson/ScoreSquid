@@ -12,6 +12,7 @@ ScoreSquid Archery is the archery side of [ScoreSquid](https://github.com/elpete
 *   **Self-checking import:** Every card is its own checksum (arrows → end sums → running totals → round totals). A card that doesn't add up is rejected with the exact end that's wrong, never guessed at.
 *   **Like-for-like comparisons:** Scores are grouped by *setup* (bow style, indoor/outdoor, distance, face). The distance and face aren't printed on the card, so import asks once and remembers.
 *   **Insights:** Arrow average, % of max, hit rate and end-to-end consistency over time; personal bests; where arrows landed by target color; round 1 vs round 2.
+*   **Detailed arrow colors:** An account setting (Account → Display) that gives each ring a darker and a lighter shade, so a 10 and a 9 look different, and dots the X. Off by default; every number meets WCAG AA in both themes. The palette and its tests are in `features/archery/lib/arrow-colors.ts`.
 *   **Multi-archer:** Siblings under one parent account.
 *   **Secure:** Supabase Auth, Row Level Security on every table, private storage for PDFs.
 

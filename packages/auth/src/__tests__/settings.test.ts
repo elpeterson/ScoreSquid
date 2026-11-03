@@ -21,6 +21,14 @@ describe('parseSettingUpdate', () => {
     expect(parseSettingUpdate('show_placements', false, GYMNAST)).toEqual({ show_placements: false });
   });
 
+  it('accepts the archery arrow-color toggle only as a boolean', () => {
+    const toggles = { detailed_arrow_colors: false };
+    expect(parseSettingUpdate('detailed_arrow_colors', true, toggles)).toEqual({ detailed_arrow_colors: true });
+    expect(parseSettingUpdate('detailed_arrow_colors', 'true', toggles)).toBeNull();
+    expect(parseSettingUpdate('detailed_arrow_colors', 1, toggles)).toBeNull();
+    expect(parseSettingUpdate('theme', 'dark', toggles)).toBeNull();
+  });
+
   it("rejects another app's toggles", () => {
     expect(parseSettingUpdate('show_placements', true, ARCHER)).toBeNull();
   });

@@ -182,7 +182,7 @@ export const RINGS = ['gold', 'red', 'blue', 'black', 'white', 'miss'] as const;
 export type Ring = (typeof RINGS)[number];
 export type RingShares = Record<Ring, number>;
 
-const RING_OF: Record<Arrow, Ring> = {
+export const RING_OF: Record<Arrow, Ring> = {
   X: 'gold', '10': 'gold', '9': 'gold',
   '8': 'red', '7': 'red',
   '6': 'blue', '5': 'blue',
