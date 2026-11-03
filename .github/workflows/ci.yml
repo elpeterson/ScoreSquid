@@ -35,8 +35,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Run tests
-        run: npm test
+      # Fails if coverage drops below the floor in each package's vitest.config.ts.
+      - name: Run tests with coverage
+        run: npm run test:coverage
 
       - name: Build
         env:
