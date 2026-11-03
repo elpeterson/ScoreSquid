@@ -44,11 +44,12 @@ export default async function AboutPage() {
             </p>
             <p>
               At the end of the day all of this here is <strong>your</strong>{' '}
-              data and it belongs to you. The README (below) has all the
-              instructions you need to host your own database, and version of
-              ScoreSquid Gymnastics, by yourself so you never have to worry about{' '}
-              <em>my</em> app going the way of MyUSAGym. All the code is free
-              and available for you to use however you please.
+              data and it belongs to you. All the code is public{' '}
+              <a href="https://github.com/elpeterson/ScoreSquid" className="underline">
+                on GitHub
+              </a>
+              , so you can run your own copy and never have to worry about{' '}
+              <em>my</em> app going the way of MyUSAGym.
             </p>
             <p>
               <strong>ScoreSquid Gymnastics</strong> is designed to be the digital
