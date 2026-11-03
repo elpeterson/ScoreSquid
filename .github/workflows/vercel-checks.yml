@@ -15,10 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: 'npm'
@@ -29,6 +29,9 @@ jobs:
       - name: Run tests
         run: npm test
 
+      # Still Node 20, so this step shows a deprecation warning: Vercel moved the action to
+      # Node 24 on its main branch in 2026-05 but hasn't moved the v1 tag. Moving needs a new
+      # tag from Vercel or a commit-SHA pin, which is a separate decision (SQ-047).
       - name: Notify Vercel
         uses: vercel/repository-dispatch/actions/status@v1
         if: always()
